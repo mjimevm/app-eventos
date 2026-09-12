@@ -203,23 +203,23 @@ fun EventoInfoPage(
                 }
             }
 
-            // Botón Asistir (Pegado al final)
+            // Botón Asistir (Pegado al final con padding seguro)
             Button(
                 onClick = { /* TODO */ },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 12.dp, top = 8.dp)
                     .height(56.dp),
                 shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
                     text = "Asistir",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondary
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
@@ -254,7 +254,7 @@ fun AmigosStack(amigos: List<Int>) {
                     .size(32.dp)
                     .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer
+                color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Icon(
                     painter = painterResource(id = iconRes),

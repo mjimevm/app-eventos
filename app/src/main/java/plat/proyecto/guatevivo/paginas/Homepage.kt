@@ -58,11 +58,12 @@ fun DestacadosCard(
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .height(160.dp)
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                            startY = 600f
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
                         )
                     )
             )
@@ -252,7 +253,7 @@ fun SectionHeader(title: String, hasAction: Boolean = false) {
         if (hasAction) {
             Text(
                 text = "Ver todos",
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 14.sp
             )
         }
@@ -352,12 +353,12 @@ fun ProximamenteCard(
                         Surface(
                             modifier = Modifier.size(32.dp),
                             shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
+                            color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.account_circle),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
 
