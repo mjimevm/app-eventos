@@ -1,5 +1,6 @@
 package plat.proyecto.guatevivo.bars
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
@@ -34,13 +35,13 @@ fun BottomNavigationBar(
                         contentDescription = label,
                         // AQUÍ: Si está seleccionado usa el color contrario (onSurface)
                         // Si no, usa un color variante para que se note la diferencia
-                        tint = if (isSelected) MaterialTheme.colorScheme.secondary
+                        tint = if (isSelected) MaterialTheme.colorScheme.onSecondary
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                    indicatorColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
@@ -48,7 +49,7 @@ fun BottomNavigationBar(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun bottomBarPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {

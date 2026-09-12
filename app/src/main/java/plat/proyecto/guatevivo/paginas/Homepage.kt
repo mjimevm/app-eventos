@@ -114,7 +114,7 @@ fun DestacadosCarousel(items: List<CarouselItem>) {
 fun HomeScreen() {
     Scaffold(
         topBar = {
-            TopBar()
+            TopBar(false)
         },
         bottomBar = {
             BottomNavigationBar()
