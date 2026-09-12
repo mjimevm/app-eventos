@@ -1,5 +1,6 @@
 package plat.proyecto.guatevivo.paginas
 
+import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
@@ -33,72 +34,79 @@ import plat.proyecto.guatevivo.bars.TopBar
 data class CarouselItem (
     val id: Int,
     @DrawableRes val imageResId: Int,
-    val title: String,
-    val location: String
+    val titulo: String,
+    val ubicacion: String
 )
+
+@Composable
+fun DestacadosCard(
+    titulo: String,
+    ubicacion: String,
+    @DrawableRes imageResId: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxSize(),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = titulo,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                            startY = 600f
+                        )
+                    )
+            )
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = titulo,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = ubicacion,
+                    color = Color.White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DestacadosCarousel() {
-    val items = listOf(
-        CarouselItem(0, R.drawable.festival, "Festival de las Flores", "Antigua Guatemala"),
-        CarouselItem(1, R.drawable.feria, "Concierto en Atitlán", "Panajachel, Sololá"),
-        CarouselItem(2, R.drawable.panajachel, "Feria de noviembre", "Ciudad de Guatemala"),
-    )
-
+fun DestacadosCarousel(items: List<CarouselItem>) {
     HorizontalMultiBrowseCarousel(
         state = rememberCarouselState { items.count() },
         preferredItemWidth = 330.dp,
         maxSmallItemWidth = 40.dp,
         itemSpacing = 8.dp,
         modifier = Modifier
-            .width(372.dp)
+            .fillMaxWidth()
             .height(328.dp)
             .padding(horizontal = 16.dp),
     ) { i ->
         val item = items[i]
-
-        Card(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(4.dp)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Image(
-                    painter = painterResource(id = item.imageResId),
-                    contentDescription = item.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                                startY = 600f // Comienza más abajo para no cubrir la foto
-                            )
-                        )
-                )
-
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = item.title,
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = item.location,
-                        color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        }
+        DestacadosCard(
+            titulo = item.titulo,
+            ubicacion = item.ubicacion,
+            imageResId = item.imageResId
+        )
     }
 }
 
@@ -125,7 +133,11 @@ fun HomeScreen() {
 
             // 2. Filtros de Categorías
             item {
-                CategoryFilters()
+                val categories = listOf("Todos", "Conciertos", "Cultura", "Gastronomía", "Moda")
+                CategoryFilters(
+                    categories = categories,
+                    onCategorySelected = { /* TODO */ }
+                )
             }
 
             // 3. Sección Destacados
@@ -133,7 +145,12 @@ fun HomeScreen() {
                 SectionHeader(title = "Destacados")
             }
             item {
-                DestacadosCarousel()
+                val destacadosItems = listOf(
+                    CarouselItem(0, R.drawable.festival, "Festival de las Flores", "Antigua Guatemala"),
+                    CarouselItem(1, R.drawable.feria, "Concierto en Atitlán", "Panajachel, Sololá"),
+                    CarouselItem(2, R.drawable.panajachel, "Feria de noviembre", "Ciudad de Guatemala"),
+                )
+                DestacadosCarousel(items = destacadosItems)
             }
 
             // 4. Sección Próximamente
@@ -143,7 +160,7 @@ fun HomeScreen() {
 
             // Lista de eventos próximos (ejemplo)
             items(2) {
-                ProximamenteCard()
+                ProximamenteCard("Festival de las Flores", "NOV", 1, "Antigua Guatemala", 0, R.drawable.festival)
             }
         }
     }
@@ -151,60 +168,58 @@ fun HomeScreen() {
 
 @Composable
 fun SearchBarSection() {
-    Box(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .shadow(
+                elevation = 5.dp,
+                spotColor = Color.Black,
+                ambientColor = Color.Black,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .height(56.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(4.dp),
+        border = BorderStroke(1.dp, color = MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Surface(
+        Row(
             modifier = Modifier
-                .shadow(
-                    elevation = 5.dp,
-                    spotColor = Color(0x26000000),
-                    ambientColor = Color(0x26000000),
-                    shape = RoundedCornerShape(4.dp)
-                )
-                .width(372.dp)
-                .height(56.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(4.dp),
-            border = BorderStroke(1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Busca eventos, lugares u artistas",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    painter = painterResource(id = R.drawable.search),
-                    contentDescription = "Buscar",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = "Busca eventos, lugares u artistas",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                painter = painterResource(id = R.drawable.search),
+                contentDescription = "Buscar",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @Composable
-fun CategoryFilters() {
-    val categories = listOf("Todos", "Conciertos", "Cultura", "Gastronomía", "Moda")
+fun CategoryFilters(
+    categories: List<String>,
+    onCategorySelected: (String) -> Unit
+) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(categories) { category ->
             val isSelected = category == "Todos"
             Button(
-                onClick = { },
+                onClick = { onCategorySelected(category) },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                     contentColor = if (isSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant
@@ -224,7 +239,7 @@ fun SectionHeader(title: String, hasAction: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -245,7 +260,14 @@ fun SectionHeader(title: String, hasAction: Boolean = false) {
 }
 
 @Composable
-fun ProximamenteCard() {
+fun ProximamenteCard(
+    titulo: String,
+    fecha: String,
+    dia: Int,
+    ubicacion: String,
+    cantidadAmigos: Int,
+    @DrawableRes imageResId: Int
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -262,7 +284,7 @@ fun ProximamenteCard() {
                     .height(180.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.festival),
+                    painter = painterResource(id = imageResId),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -276,13 +298,13 @@ fun ProximamenteCard() {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Festival de Barriletes Gigantes",
+                        text = titulo,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Sumpango, Sacatepéquez",
+                        text = ubicacion,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -299,13 +321,13 @@ fun ProximamenteCard() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "NOV",
+                            text = fecha,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.tertiaryContainer,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "1",
+                            text = dia.toString(),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.tertiaryContainer
@@ -314,56 +336,58 @@ fun ProximamenteCard() {
                 }
             }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(modifier = Modifier.height(32.dp).width(52.dp)) {
-                    Surface(
-                        modifier = Modifier.size(32.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.account_circle),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                    Surface(
-                        modifier = Modifier
-                            .padding(start = 20.dp)
-                            .size(32.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.account_circle),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-
-                Text(
-                    text = "2 Amigos asistirán",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            if (cantidadAmigos != 0) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(modifier = Modifier.height(32.dp).width(52.dp)) {
+                        Surface(
+                            modifier = Modifier.size(32.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.account_circle),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .padding(start = 20.dp)
+                                .size(32.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.account_circle),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                    Text(
+                        text = if (cantidadAmigos > 1) "$cantidadAmigos amigos asistirán" else "$cantidadAmigos amigo asistirá",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
 @Composable
 fun HomePreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme  {
@@ -375,6 +399,6 @@ fun HomePreview() {
 @Composable
 fun ProximamenteCardPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
-        ProximamenteCard()
+        ProximamenteCard("Festival de las Flores", "NOV", 1, "Antigua Guatemala", 1, R.drawable.festival)
     }
 }
