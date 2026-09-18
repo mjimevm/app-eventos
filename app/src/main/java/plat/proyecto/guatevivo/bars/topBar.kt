@@ -45,10 +45,39 @@ fun TopBar(
     }
 }
 
+@Composable
+fun TopBarCenter(
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(78.dp)
+            .background(color = MaterialTheme.colorScheme.surface)
+            .padding(16.dp)
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.guatevivo),
+            contentDescription = "Guatevivo Logo",
+            modifier = Modifier.height(40.dp)
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun topBarPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
         TopBar()
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun topBarCenterPreview() {
+    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+        TopBarCenter()
     }
 }
