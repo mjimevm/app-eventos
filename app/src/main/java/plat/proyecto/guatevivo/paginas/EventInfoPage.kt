@@ -1,5 +1,6 @@
 package plat.proyecto.guatevivo.paginas
 
+import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -33,7 +34,8 @@ import plat.proyecto.guatevivo.bars.TopBar
 fun EventoInfoPage(
     titulo: String = "Festival de las Flores",
     miniDescripcion: String = "La celebración anual más grande del arte y la música en la ciudad colonial.",
-    fecha: String = "14 y 15 de Noviembre",
+    dia: String = "14 y 15",
+    mes: String = "Noviembre",
     ubicacion: String = "Calle del Arco",
     precio: String = "Entrada Gratis",
     descripcionLarga: String = "El Festival de las Flores es un evento cultural y artístico anual que transforma por completo las calles coloniales de La Antigua Guatemala en un gigantesco lienzo botánico. Durante un fin de semana, la arquitectura barroca de la ciudad se fusiona con miles de colores y aromas naturales, atrayendo a miles de visitantes locales e internacionales.",
@@ -58,26 +60,23 @@ fun EventoInfoPage(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Contenido Scrollable
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Imagen con Gradientes
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(450.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.festival), // Usa tu recurso aquí
+                        painter = painterResource(id = R.drawable.festival),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
 
-                    // Gradiente Superior (para mezcla con TopBar)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -89,7 +88,6 @@ fun EventoInfoPage(
                             )
                     )
 
-                    // Gradiente Inferior (para que la imagen "desaparezca" en el surface)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -122,15 +120,14 @@ fun EventoInfoPage(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Fila de Fecha y Mapa
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         InfoBox(
                             modifier = Modifier.weight(1f),
-                            titulo = fecha,
-                            subtitulo = "Noviembre"
+                            titulo = dia + " de",
+                            subtitulo = mes
 
                         )
                         InfoBox(
@@ -142,7 +139,6 @@ fun EventoInfoPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Box de Precio
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surface,
@@ -160,7 +156,6 @@ fun EventoInfoPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Box de Amigos
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surface,
@@ -186,7 +181,6 @@ fun EventoInfoPage(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Acerca del evento
                     Text(
                         text = "Acerca del Evento",
                         style = MaterialTheme.typography.titleLarge,
@@ -203,7 +197,6 @@ fun EventoInfoPage(
                 }
             }
 
-            // Botón Asistir (Pegado al final con padding seguro)
             Button(
                 onClick = { /* TODO */ },
                 modifier = Modifier
@@ -266,7 +259,7 @@ fun AmigosStack(amigos: List<Int>) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, uiMode = UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, showSystemUi = true, uiMode = UI_MODE_NIGHT_NO)
 @Composable
 fun EventoInfoPagePreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
