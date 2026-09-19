@@ -54,7 +54,6 @@ fun CreateEventScreen() {
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Encabezado
                 Text(
                     text = "Crea tu evento",
                     modifier = Modifier.fillMaxWidth(),
@@ -72,7 +71,6 @@ fun CreateEventScreen() {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Card Principal
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(4.dp),
@@ -96,13 +94,13 @@ fun CreateEventScreen() {
                             )
                         }
 
-                        // Formulario
                         Column(modifier = Modifier.padding(16.dp)) {
-                            InputField(
+                            InputField (
                                 label = "Nombre del Evento",
                                 value = nombreEvento,
                                 onValueChange = { nombreEvento = it },
-                                placeholder = "Ej. Cena familiar"
+                                placeholder = "Ej. Cena familiar",
+                                icon = null
                             )
 
                             InputField(
@@ -149,7 +147,6 @@ fun CreateEventScreen() {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Checkbox de Confirmación
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -195,7 +192,7 @@ fun CreateEventScreen() {
 }
 
 @Composable
-fun InputField(
+private fun InputField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,

@@ -1,95 +1,141 @@
 package plat.proyecto.guatevivo.paginas
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedSecureTextField
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.TopBarCenter
+import plat.proyecto.guatevivo.bars.TopBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Register(modifier: Modifier = Modifier) {
-    Column(modifier = modifier
-        .fillMaxSize()
-        .padding(25.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.Start)
-    {
-        TopBarCenter()
-
-        Text("Que desea Crear?",
-            style = MaterialTheme.typography.displayMedium)
-
-        HorizontalDivider(
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopBar(showBackButton = true)
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 15.dp, bottom = 30.dp),
-            thickness = 3.dp,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        FilledTonalButton(onClick = {},
-            modifier = modifier
-                .padding(bottom = 15.dp)
-                .fillMaxWidth()
-                .height(60.dp),
-            shape = RoundedCornerShape(5.dp),
-            colors = ButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+                .fillMaxSize()
+                .padding(padding)
         ) {
-            Icon(painter = painterResource(id = R.drawable.account_circle),
-                contentDescription = null,
-                modifier = modifier.size(50.dp))
-            Text("  Cuenta de Usuario",
-            style = MaterialTheme.typography.bodyLarge
-        )}
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
 
-        FilledTonalButton(onClick = {},
-            modifier = modifier
-                .padding(bottom = 15.dp)
-                .fillMaxWidth()
-                .height(60.dp),
-            shape = RoundedCornerShape(5.dp),
-            colors = ButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+                Text(
+                    text = "¿Qué desea crear?",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 24.dp),
+                    thickness = 3.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "Selecciona el tipo de cuenta que mejor se adapte a tus necesidades",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
+
+                SelectionCard(
+                    title = "Cuenta de Usuario",
+                    description = "Ideal para personas que desean descubrir y asistir a eventos increíbles.",
+                    iconResId = R.drawable.account_circle,
+                    onClick = { /* TODO: Navegar a CreateNormalAccount */ }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SelectionCard(
+                    title = "Cuenta de Compañía",
+                    description = "Perfecta para empresas u organizadores que desean publicar y gestionar sus propios eventos.",
+                    iconResId = R.drawable.company_icon,
+                    onClick = { /* TODO: Navegar a CreateBusinessAccount */ }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectionCard(
+    title: String,
+    description: String,
+    iconResId: Int,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(painter = painterResource(id = R.drawable.company_icon),
-                contentDescription = null)
-            Text("  Cuenta de Compañia",
-                style = MaterialTheme.typography.bodyLarge
-            )}
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(56.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = iconResId),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
