@@ -27,7 +27,12 @@ import androidx.compose.ui.unit.dp
 import plat.proyecto.guatevivo.bars.TopBarCenter
 
 @Composable
-fun Login(modifier: Modifier = Modifier) {
+fun Login(modifier: Modifier = Modifier,
+          onIniciarSesion: () -> Unit = {},
+          onCrearCuenta: () -> Unit = {}) {
+    val emailState = rememberTextFieldState()
+    val passwordState = rememberTextFieldState()
+
     Column(modifier = modifier
         .fillMaxSize()
         .padding(25.dp),
@@ -49,27 +54,37 @@ fun Login(modifier: Modifier = Modifier) {
 
         OutlinedTextField(
             modifier = modifier.fillMaxWidth(),
-            state = rememberTextFieldState(),
+            state = emailState,
             shape = RoundedCornerShape(5.dp),
             label = { Text("Correo Electrónico") },
         )
 
         OutlinedSecureTextField(
             modifier = modifier.fillMaxWidth(),
-            state = rememberTextFieldState(),
+            state = passwordState,
             shape = RoundedCornerShape(5.dp),
             label = { Text("Contraseña") },
         )
-        Row(modifier = modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically)
-        {
-            Checkbox(checked = false, onCheckedChange = {})
-            Text("Recordar Inicio de Sesión")
-        }
 
         Spacer(modifier = modifier.weight(1f))
 
-        FilledTonalButton(onClick = {},
+        FilledTonalButton(onClick = onIniciarSesion,
+            modifier = modifier
+                .padding(bottom = 15.dp)
+                .fillMaxWidth()
+                .height(60.dp),
+            shape = RoundedCornerShape(5.dp),
+            colors = ButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.primary,
+                disabledContentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ) { Text("Iniciar Sesión",
+            style = MaterialTheme.typography.bodyLarge
+        )}
+
+        FilledTonalButton(onClick = onCrearCuenta,
             modifier = modifier
                 .padding(bottom = 15.dp)
                 .fillMaxWidth()
@@ -81,7 +96,7 @@ fun Login(modifier: Modifier = Modifier) {
                 disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
-        ) { Text("Iniciar Sesión",
+        ) { Text("Crear Cuenta",
             style = MaterialTheme.typography.bodyLarge
         )}
 
@@ -92,6 +107,6 @@ fun Login(modifier: Modifier = Modifier) {
 @Composable
 fun LoginPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
-        Login()
+        Login(onCrearCuenta = {}, onIniciarSesion = {})
     }
 }
