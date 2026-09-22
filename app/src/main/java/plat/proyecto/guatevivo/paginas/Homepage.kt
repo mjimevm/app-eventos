@@ -260,6 +260,14 @@ fun SectionHeader(title: String, hasAction: Boolean = false) {
     }
 }
 
+data class ProximamenteItem(
+    val title: String,
+    val fecha: String,
+    val dia: Int,
+    val ubicacion: String,
+    val imageResId: Int
+)
+
 @Composable
 fun ProximamenteCard(
     titulo: String,
