@@ -22,7 +22,9 @@ import plat.proyecto.guatevivo.bars.TopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Register(modifier: Modifier = Modifier) {
+fun Register(modifier: Modifier = Modifier,
+             onCreateNormalAccount: () -> Unit = {},
+             onCreateBussinesAccount: () -> Unit = {}) {
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -70,7 +72,7 @@ fun Register(modifier: Modifier = Modifier) {
                     title = "Cuenta de Usuario",
                     description = "Ideal para personas que desean descubrir y asistir a eventos increíbles.",
                     iconResId = R.drawable.account_circle,
-                    onClick = { /* TODO: Navegar a CreateNormalAccount */ }
+                    onClick = { onCreateNormalAccount }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -79,7 +81,7 @@ fun Register(modifier: Modifier = Modifier) {
                     title = "Cuenta de Compañía",
                     description = "Perfecta para empresas u organizadores que desean publicar y gestionar sus propios eventos.",
                     iconResId = R.drawable.company_icon,
-                    onClick = { /* TODO: Navegar a CreateBusinessAccount */ }
+                    onClick = { onCreateBussinesAccount }
                 )
             }
         }
@@ -143,6 +145,6 @@ fun SelectionCard(
 @Composable
 fun RegisterPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
-        Register()
+        Register(onCreateNormalAccount = {}, onCreateBussinesAccount = {})
     }
 }
