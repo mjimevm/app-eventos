@@ -191,8 +191,8 @@ fun SeleccionBussines(
 fun BussinesPagePreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
         BussinesAccountPage(
-            usuario = "Andres",
-            correo ="pin25212@gmail.com",
+            usuario = "Coca Cola",
+            correo ="COLA2@gmail.com",
             imagenPerfil = R.drawable.account_circle,
             numero = "+502 4000-2000",
             ubicacion = "Ciudad de Guatemala",
