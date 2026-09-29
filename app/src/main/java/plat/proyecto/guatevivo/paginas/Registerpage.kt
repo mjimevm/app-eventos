@@ -1,6 +1,7 @@
 package plat.proyecto.guatevivo.paginas
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -140,8 +141,8 @@ fun SelectionCard(
         }
     }
 }
-
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun RegisterPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {

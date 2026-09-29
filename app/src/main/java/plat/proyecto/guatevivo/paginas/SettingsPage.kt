@@ -1,6 +1,7 @@
 package plat.proyecto.guatevivo.paginas
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import plat.proyecto.guatevivo.R
+import plat.proyecto.guatevivo.bars.BottomNavigationBar
+import plat.proyecto.guatevivo.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Composable
@@ -51,42 +54,27 @@ fun SettingsPage(
     var darkModeEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            TopBar(true)
+        },
+        bottomBar = {
+            BottomNavigationBar(selectedItem = -1)
+        },
+        containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 16.dp)
                 .padding(top = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            // Header con botón de retroceso y título grande "Ajustes"
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.return_icon),
-                        contentDescription = "Regresar",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
 
             Text(
                 text = "Ajustes",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 32.sp,
-                    lineHeight = 36.sp,
-                ),
+                style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(start = 4.dp),
@@ -317,8 +305,8 @@ fun SettingsRowItem(
         }
     }
 }
-
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun SettingsPreview() {
     GuatevivoTheme {

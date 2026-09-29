@@ -259,7 +259,8 @@ fun AmigosStack(amigos: List<Int>) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun EventoInfoPagePreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {

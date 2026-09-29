@@ -1,6 +1,7 @@
 package plat.proyecto.guatevivo.paginas
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +50,15 @@ fun SearchPage(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
+            item {
+                Text(
+                    "Buscar",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                )
+            }
             // 1. Barra de Búsqueda (mismo componente del Home)
             item {
                 SearchBarSection(text = "Busca eventos, lugares u artistas")
@@ -116,8 +126,8 @@ fun SearchPage(
         }
     }
 }
-
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun SearchPreview() {
     GuatevivoTheme {

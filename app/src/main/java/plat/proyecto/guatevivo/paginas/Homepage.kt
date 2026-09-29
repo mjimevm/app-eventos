@@ -397,17 +397,10 @@ fun ProximamenteCard(
 }
 
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun HomePreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme  {
         HomeScreen()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProximamenteCardPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
-        ProximamenteCard("Festival de las Flores", "NOV", 1, "Antigua Guatemala", 1, R.drawable.festival)
     }
 }
