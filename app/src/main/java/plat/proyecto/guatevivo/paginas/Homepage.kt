@@ -168,7 +168,7 @@ fun HomeScreen() {
 }
 
 @Composable
-fun SearchBarSection() {
+fun SearchBarSection(text: String = "Busca eventos, lugares u artistas") {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -192,7 +192,7 @@ fun SearchBarSection() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Busca eventos, lugares u artistas",
+                text = text,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)

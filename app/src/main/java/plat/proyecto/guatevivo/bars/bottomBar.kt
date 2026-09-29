@@ -18,7 +18,7 @@ fun BottomNavigationBar(
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
-        windowInsets = NavigationBarDefaults.windowInsets // Esto maneja automáticamente el área de gestos
+        windowInsets = NavigationBarDefaults.windowInsets
     ) {
         val items = listOf(
             Triple("Inicio", R.drawable.lucide_house, 0),

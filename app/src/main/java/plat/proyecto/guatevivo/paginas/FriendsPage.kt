@@ -1,5 +1,6 @@
 package plat.proyecto.guatevivo.paginas
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,11 +35,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import plat.proyecto.guatevivo.R
+import plat.proyecto.guatevivo.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
@@ -56,92 +62,114 @@ fun FriendsScreen(
     modifier: Modifier = Modifier
 ) {
     val emailState = rememberTextFieldState()
-
-    Column(modifier = modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.Start
-    ) {
-        TopBar(showBackButton = true, onBackClick = onBackClick)
-
-        Text(text = "Amigos",
-            style = MaterialTheme.typography.displayMedium,
-            modifier = modifier.padding(15.dp)
-        )
-
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 15.dp),
-            thickness = 3.dp,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Text(text = "Agregar amigos",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = modifier.padding(start = 15.dp)
-        )
-
-        OutlinedTextField(
-            state = emailState,
-            modifier = Modifier.fillMaxWidth().padding(15.dp),
-            label = { Text("Correo electrónico") },
-            shape = RoundedCornerShape(5.dp)
-        )
-
-        Button(
-            onClick = {
-                val email = emailState.text.toString().trim()
-                if (email.isNotEmpty()) {
-                    onSendFriendRequest(email)
-                    emailState.clearText()
-                }
-            },
-            modifier = Modifier
-                .padding(start = 15.dp, end = 15.dp,bottom = 15.dp)
-                .fillMaxWidth()
-                .height(55.dp),
-            shape = RoundedCornerShape(5.dp)
+    Scaffold(
+        topBar = {
+            TopBar(true)
+        },
+        bottomBar = {
+            BottomNavigationBar(selectedItem = -1)
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    ) { padding ->
+        Column(modifier = modifier
+                .fillMaxSize()
+                .padding(padding),
+            horizontalAlignment = Alignment.Start
         ) {
-
-            Text(text = "Enviar solicitud",
-                style = MaterialTheme.typography.bodyLarge
+            Text (
+                text = "Amigos",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = modifier.padding(16.dp)
             )
-        }
 
-        Text(text = "Mis amigos",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = modifier.padding(start = 15.dp)
-        )
-
-        if (friends.isEmpty()) {
-            Text(text = "Todavía no tienes amigos agregados.",
+            HorizontalDivider(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(15.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    .padding(horizontal = 16.dp),
+                thickness = 3.dp,
+                color = MaterialTheme.colorScheme.primary
             )
-        } else {
-            LazyColumn(
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Agregar amigos",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = modifier.padding(start = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SearchBarSection("Buscar amigos por correo electrónico")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    val email = emailState.text.toString().trim()
+                    if (email.isNotEmpty()) {
+                        onSendFriendRequest(email)
+                        emailState.clearText()
+                    }
+                },
                 modifier = Modifier
+                    .padding(start = 15.dp, end = 15.dp,bottom = 15.dp)
                     .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .height(55.dp),
+                shape = RoundedCornerShape(4.dp)
             ) {
-                items(items = friends, key = { friend -> friend.id }
-                ) { friend ->
-                    FriendItem(
-                        friend = friend,
-                        onDeleteFriend = {
-                            onDeleteFriend(friend)
-                        }
-                    )
+
+                Text(
+                    text = "Enviar solicitud",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            Text(
+                text = "Mis amigos",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = modifier.padding(start = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+
+            if (friends.isEmpty()) {
+                Text(text = "Todavía no tienes amigos agregados.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    items(items = friends, key = { friend -> friend.id }
+                    ) { friend ->
+                        FriendItem(
+                            friend = friend,
+                            onDeleteFriend = {
+                                onDeleteFriend(friend)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun FriendItem(
@@ -154,51 +182,61 @@ fun FriendItem(
     Box(
         modifier = modifier.fillMaxWidth()
     ) {
-        Surface(
-            onClick = { menu = true },
-            modifier = Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            tonalElevation = 2.dp
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(15.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                onClick = { menu = true },
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface
             ) {
-                Surface(
-                    modifier = Modifier.size(55.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Surface(
+                        modifier = Modifier.size(48.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.account_circle),
+                            contentDescription = null,
+                            modifier = Modifier.padding(8.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
 
-                    Icon(
-                        painter = painterResource(id = R.drawable.account_circle),
-                        contentDescription = null,
-                        modifier = Modifier.padding(12.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                Spacer(modifier = Modifier.width(15.dp))
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = friend.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                        Spacer(modifier = Modifier.height(2.dp))
 
-                    Text(text = friend.name,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-
-                    Spacer(modifier = Modifier.height(3.dp))
-
-                    Text(text = friend.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        Text(
+                            text = friend.email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 80.dp, end = 16.dp),
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
         }
 
         DropdownMenu(
@@ -207,10 +245,10 @@ fun FriendItem(
                 menu = false
             }
         ) {
-
             DropdownMenuItem(
                 text = {
-                    Text(text = "Eliminar amigo",
+                    Text(
+                        text = "Eliminar amigo",
                         color = MaterialTheme.colorScheme.error
                     )
                 },
