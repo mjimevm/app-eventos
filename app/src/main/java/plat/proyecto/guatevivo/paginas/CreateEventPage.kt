@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -122,7 +123,7 @@ fun CreateEventScreen() {
                                     label = "Fecha",
                                     value = fecha,
                                     onValueChange = { fecha = it },
-                                    placeholder = "dd / mm / aaaa",
+                                    placeholder = "--/--/----",
                                     icon = R.drawable.calendar_icon
                                 )
                                 InputField(
@@ -216,7 +217,8 @@ private fun InputField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = minHeight),
+                .defaultMinSize(minHeight = minHeight)
+                .clip(shape = RoundedCornerShape(4.dp)),
             placeholder = { Text(text = placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
             shape = RoundedCornerShape(4.dp),
             colors = OutlinedTextFieldDefaults.colors(

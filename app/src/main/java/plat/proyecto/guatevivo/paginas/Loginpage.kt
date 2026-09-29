@@ -2,6 +2,7 @@ package plat.proyecto.guatevivo.paginas
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +41,10 @@ import plat.proyecto.guatevivo.bars.TopBarCenter
 fun Login(
     modifier: Modifier = Modifier,
     onIniciarSesion: () -> Unit = {},
-    onCrearCuenta: () -> Unit = {}
+    onCrearCuenta: () -> Unit = {},
+    onForgotPassword: () -> Unit = {},
+    errorMessage: String? = null,
+    isError: Boolean = false,
 ) {
     val emailState = rememberTextFieldState()
     val passwordState = rememberTextFieldState()
@@ -73,21 +79,54 @@ fun Login(
         HorizontalDivider(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 24.dp),
+                .padding(top = 16.dp, bottom = 16.dp),
             thickness = 3.dp,
             color = MaterialTheme.colorScheme.primary
         )
+
+        if (!errorMessage.isNullOrEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                border = BorderStroke(1.dp,MaterialTheme.colorScheme.error)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Atención",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
 
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             state = emailState,
             shape = RoundedCornerShape(4.dp),
+            isError = isError,
             label = { Text("Correo Electrónico") },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.account_circle),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -99,12 +138,13 @@ fun Login(
             modifier = Modifier.fillMaxWidth(),
             state = passwordState,
             shape = RoundedCornerShape(4.dp),
+            isError = isError,
             label = { Text("Contraseña") },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.lock_icon),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -146,6 +186,25 @@ fun Login(
                 modifier = Modifier.clickable { onCrearCuenta() }
             )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "¿Has olvidado tu contraseña? ",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Presiona aquí",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { onForgotPassword() }
+            )
+        }
     }
 }
 
@@ -155,5 +214,19 @@ fun Login(
 fun LoginPreview() {
     plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
         Login(onCrearCuenta = {}, onIniciarSesion = {})
+    }
+}
+
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO, name = "Login Error Light")
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES, name = "Login Error Dark")
+@Composable
+fun LoginErrorPreview() {
+    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+        Login(
+            onCrearCuenta = {},
+            onIniciarSesion = {},
+            isError = true,
+            errorMessage = "Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos."
+        )
     }
 }

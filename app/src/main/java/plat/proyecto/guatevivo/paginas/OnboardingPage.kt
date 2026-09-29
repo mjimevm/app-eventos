@@ -274,7 +274,7 @@ fun OnboardingPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    shape = CircleShape
+                    shape = RoundedCornerShape(4.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -285,14 +285,6 @@ fun OnboardingPage(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            painter = painterResource(id = R.drawable.return_icon),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(16.dp)
-                                .rotate(180f)
-                        )
                     }
                 }
 
@@ -301,7 +293,7 @@ fun OnboardingPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(4.dp),
                     border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
