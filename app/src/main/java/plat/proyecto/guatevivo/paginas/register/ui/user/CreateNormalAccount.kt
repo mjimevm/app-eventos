@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.register.ui.user
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -23,9 +23,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.TopBar
+import plat.proyecto.guatevivo.core.bars.TopBar
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,7 +263,7 @@ private fun InputField(
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun CreateNormalAccountPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         CreateNormalAccount()
     }
 }

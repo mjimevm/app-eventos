@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.profile.ui.friends
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -44,8 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import plat.proyecto.guatevivo.bars.BottomNavigationBar
-import plat.proyecto.guatevivo.bars.TopBar
+import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
+import plat.proyecto.guatevivo.core.bars.TopBar
+import plat.proyecto.guatevivo.paginas.home.ui.home.SearchBarSection
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 data class Friend(

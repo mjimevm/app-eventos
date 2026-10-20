@@ -1,10 +1,9 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.register.ui.choice
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -17,9 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.TopBar
+import plat.proyecto.guatevivo.core.bars.TopBar
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,7 +144,7 @@ fun SelectionCard(
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun RegisterPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         Register(onCreateNormalAccount = {}, onCreateBussinesAccount = {})
     }
 }

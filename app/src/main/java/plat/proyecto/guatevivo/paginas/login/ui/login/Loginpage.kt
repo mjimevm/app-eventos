@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.login.ui.login
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -35,7 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.TopBarCenter
+import plat.proyecto.guatevivo.core.bars.TopBarCenter
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Composable
 fun Login(
@@ -212,7 +213,7 @@ fun Login(
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES, name = "Login Dark")
 @Composable
 fun LoginPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         Login(onCrearCuenta = {}, onIniciarSesion = {})
     }
 }
@@ -221,7 +222,7 @@ fun LoginPreview() {
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES, name = "Login Error Dark")
 @Composable
 fun LoginErrorPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         Login(
             onCrearCuenta = {},
             onIniciarSesion = {},

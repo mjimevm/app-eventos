@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.event.ui.create
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -14,16 +14,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.BottomNavigationBar
-import plat.proyecto.guatevivo.bars.TopBar
+import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
+import plat.proyecto.guatevivo.core.bars.TopBar
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -203,7 +204,7 @@ private fun InputField(
     modifier: Modifier = Modifier,
     icon: Int? = null,
     singleLine: Boolean = true,
-    minHeight: androidx.compose.ui.unit.Dp = 0.dp
+    minHeight: Dp = 0.dp
 ) {
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
@@ -245,7 +246,7 @@ private fun InputField(
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun CreateEventPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         CreateEventScreen()
     }
 }

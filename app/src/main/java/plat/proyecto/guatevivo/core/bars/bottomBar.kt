@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.bars
+package plat.proyecto.guatevivo.core.bars
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import plat.proyecto.guatevivo.R
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Composable
 fun BottomNavigationBar(
@@ -63,7 +64,7 @@ fun BottomNavigationBar(
 @Preview(showBackground = true)
 @Composable
 fun bottomBarPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         BottomNavigationBar()
     }
 }

@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.profile.ui.bussines
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -35,26 +35,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.BottomNavigationBar
-import plat.proyecto.guatevivo.bars.TopBar
+import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
+import plat.proyecto.guatevivo.core.bars.TopBar
+import plat.proyecto.guatevivo.paginas.profile.ui.user.EmptyStateView
+import plat.proyecto.guatevivo.paginas.profile.ui.user.ProfileStatItem
+import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteCard
+import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteItem
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Composable
-fun AccountPage(
+fun BussinesAccountPage(
     modifier: Modifier = Modifier,
     usuario: String,
     correo: String,
     imagenPerfil: Int? = null,
+    numero: String,
+    ubicacion: String,
     onBackClick: () -> Unit = {},
     onAjustes: () -> Unit = {},
     onBottomClick: (Int) -> Unit = {},
-    onAmistades: () -> Unit = {},
-    listaAsistidos: List<ProximamenteItem> = listOf(),
-    listaCreados: List<ProximamenteItem> = listOf(),
-    listaCompartidos: List<ProximamenteItem> = listOf()
+    listaPublicados: List<ProximamenteItem> = listOf(),
+    listaCreados: List<ProximamenteItem> = listOf()
 ) {
     var seleccionado by remember { mutableIntStateOf(0) }
 
@@ -88,7 +92,7 @@ fun AccountPage(
             }
         }
 
-        // Hero Profile Header Card
+        // Hero Profile Card
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -143,6 +147,14 @@ fun AccountPage(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (numero.isNotEmpty() || ubicacion.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = listOf(numero, ubicacion).filter { it.isNotEmpty() }.joinToString(" • "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -155,80 +167,35 @@ fun AccountPage(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ProfileStatItem(count = listaAsistidos.size, label = "Asistiendo")
-                    VerticalDivider(
-                        modifier = Modifier.height(24.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
                     ProfileStatItem(count = listaCreados.size, label = "Creados")
                     VerticalDivider(
                         modifier = Modifier.height(24.dp),
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
-                    ProfileStatItem(count = listaCompartidos.size, label = "Compartidos")
-                }
-            }
-        }
-
-        // Amistades Action Row
-        Surface(
-            onClick = onAmistades,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            shape = RoundedCornerShape(4.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.account_circle),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "Mis Amistades",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    ProfileStatItem(count = listaPublicados.size, label = "Publicados")
                 }
             }
         }
 
         // Navigation Tabs Section
-        SeleccionUsuario(
+        SeleccionBussines(
             seleccionado = seleccionado,
             onTabSelected = { seleccionado = it },
-            counts = listOf(listaAsistidos.size, listaCreados.size, listaCompartidos.size)
+            counts = listOf(listaCreados.size, listaPublicados.size)
         )
 
         // Event List or Empty State
         val currentList = when (seleccionado) {
-            0 -> listaAsistidos
-            1 -> listaCreados
-            2 -> listaCompartidos
+            0 -> listaCreados
+            1 -> listaPublicados
             else -> emptyList()
         }
 
         if (currentList.isEmpty()) {
             val emptyMessage = when (seleccionado) {
-                0 -> "Aún no estás asistiendo a ningún evento"
-                1 -> "Aún no has creado ningún evento"
-                2 -> "Aún no has compartido ningún evento"
+                0 -> "Aún no has creado ningún evento"
+                1 -> "Aún no has publicado ningún evento"
                 else -> "No hay eventos para mostrar"
             }
             EmptyStateView(
@@ -258,66 +225,13 @@ fun AccountPage(
 }
 
 @Composable
-fun ProfileStatItem(
-    count: Int,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-    ) {
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun EmptyStateView(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.calendar_icon),
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.outline
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-fun SeleccionUsuario(
+fun SeleccionBussines(
     seleccionado: Int,
     onTabSelected: (Int) -> Unit,
     counts: List<Int>,
     modifier: Modifier = Modifier
 ) {
     val tabs = listOf(
-        "Asistiendo",
         "Creados",
         "Publicados"
     )
@@ -338,8 +252,7 @@ fun SeleccionUsuario(
                 text = {
                     Text(
                         text = "$title",
-                        style = MaterialTheme.typography.labelLarge,
-                        textAlign = TextAlign.Center
+                        style = MaterialTheme.typography.labelLarge
                     )
                 }
             )
@@ -350,18 +263,31 @@ fun SeleccionUsuario(
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
-fun AccountPageAsistidosPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
-        AccountPage(
-            usuario = "Andres",
-            correo = "pin25212@gmail.com",
+fun BussinesPagePreview() {
+    GuatevivoTheme {
+        BussinesAccountPage(
+            usuario = "Coca Cola",
+            correo = "COLA2@gmail.com",
             imagenPerfil = null,
-            listaAsistidos = listOf(
-                ProximamenteItem("Festival de las Flores", "NOV", 1, "Antigua Guatemala", R.drawable.festival)
+            numero = "+502 4000-2000",
+            ubicacion = "Ciudad de Guatemala",
+            listaCreados = listOf(
+                ProximamenteItem(
+                    "Festival de las Flores",
+                    "NOV",
+                    1,
+                    "Antigua Guatemala",
+                    R.drawable.festival
+                )
             ),
-            listaCreados = emptyList(),
-            listaCompartidos = listOf(
-                ProximamenteItem("Feria de Noviembre", "NOV", 2, "Ciudad de Guatemala", R.drawable.feria)
+            listaPublicados = listOf(
+                ProximamenteItem(
+                    "Feria de Noviembre",
+                    "NOV",
+                    2,
+                    "Ciudad de Guatemala",
+                    R.drawable.feria
+                )
             )
         )
     }

@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.bars
+package plat.proyecto.guatevivo.core.bars
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -69,7 +69,7 @@ fun TopBarCenter(
 @Preview(showBackground = true)
 @Composable
 fun topBarPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         TopBar()
     }
 }
@@ -78,7 +78,7 @@ fun topBarPreview() {
 @Preview(showBackground = true)
 @Composable
 fun topBarCenterPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         TopBarCenter()
     }
 }
