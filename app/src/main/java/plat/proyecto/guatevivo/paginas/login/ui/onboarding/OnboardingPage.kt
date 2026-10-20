@@ -1,4 +1,4 @@
-package plat.proyecto.guatevivo.paginas
+package plat.proyecto.guatevivo.paginas.login.ui.onboarding
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -43,12 +40,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
-import plat.proyecto.guatevivo.bars.TopBarCenter
+import plat.proyecto.guatevivo.core.bars.TopBarCenter
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object onBoardingDestination
+
+fun NavController.navigateToOnBoarding(navOptions: NavOptions? = null) {
+    navigate(onBoardingDestination, navOptions)
+}
+
+fun NavGraphBuilder.onBoardingScreen() {
+    composable<onBoardingDestination> {
+        OnBoardingRoute()
+    }
+}
+
 @Composable
-fun OnboardingPage(
+fun OnBoardingRoute() {
+    OnboardingPage()
+}
+
+@Composable
+private fun OnboardingPage(
     modifier: Modifier = Modifier,
     onIniciarSesion: () -> Unit = {},
     onCrearCuenta: () -> Unit = {}
