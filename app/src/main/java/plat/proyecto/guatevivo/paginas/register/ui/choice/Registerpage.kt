@@ -34,30 +34,41 @@ fun NavController.navigateToRegister(navOptions: NavOptions? = null) {
 
 fun NavGraphBuilder.registerScreen(
     onCreateNormalAccount: () -> Unit,
-    onCreateBussinesAccount: () -> Unit
+    onCreateBussinesAccount: () -> Unit,
+    onBack: () -> Unit
 ) {
     composable<RegisterDestination> {
-        RegisterRoute(onCreateNormalAccount = onCreateNormalAccount, onCreateBussinesAccount = onCreateBussinesAccount)
+        RegisterRoute(
+            onCreateNormalAccount = onCreateNormalAccount,
+            onCreateBussinesAccount = onCreateBussinesAccount,
+            onBack = onBack
+        )
     }
 }
 
 @Composable
 fun RegisterRoute(
     onCreateNormalAccount: () -> Unit,
-    onCreateBussinesAccount: () -> Unit
+    onCreateBussinesAccount: () -> Unit,
+    onBack: () -> Unit
 ) {
-    Register(onCreateNormalAccount = onCreateNormalAccount, onCreateBussinesAccount = onCreateBussinesAccount)
+    Register(onCreateNormalAccount = onCreateNormalAccount,
+        onCreateBussinesAccount = onCreateBussinesAccount,
+        onBack = onBack
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Register(modifier: Modifier = Modifier,
+                     onBack: () -> Unit = {},
              onCreateNormalAccount: () -> Unit = {},
-             onCreateBussinesAccount: () -> Unit = {}) {
+             onCreateBussinesAccount: () -> Unit = {},
+) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopBar(showBackButton = true)
+            TopBar(showBackButton = true, onBackClick = onBack)
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->
@@ -101,7 +112,7 @@ private fun Register(modifier: Modifier = Modifier,
                     title = "Cuenta de Usuario",
                     description = "Ideal para personas que desean descubrir y asistir a eventos increíbles.",
                     iconResId = R.drawable.account_circle,
-                    onClick = { onCreateNormalAccount }
+                    onClick = onCreateNormalAccount
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -110,7 +121,7 @@ private fun Register(modifier: Modifier = Modifier,
                     title = "Cuenta de Compañía",
                     description = "Perfecta para empresas u organizadores que desean publicar y gestionar sus propios eventos.",
                     iconResId = R.drawable.company_icon,
-                    onClick = { onCreateBussinesAccount }
+                    onClick = onCreateBussinesAccount
                 )
             }
         }

@@ -6,6 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -47,14 +48,16 @@ fun NavGraphBuilder.homeScreen(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onEvent: () -> Unit
 ) {
     composable<HomeDestination> {
         HomeRoute(
             onHomeClick = onHomeClick,
             onSearchClick = onSearchClick,
             onCreateClick = onCreateClick,
-            onProfileClick = onProfileClick
+            onProfileClick = onProfileClick,
+            onEvent = onEvent
         )
     }
 }
@@ -64,13 +67,15 @@ fun HomeRoute(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onEvent: () -> Unit
 ) {
     HomeScreen(
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
-        onProfileClick = onProfileClick
+        onProfileClick = onProfileClick,
+        onEvent = onEvent
     )
 }
 
@@ -159,7 +164,8 @@ private fun HomeScreen(
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onEvent: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -219,7 +225,14 @@ private fun HomeScreen(
 
             // Lista de eventos próximos (ejemplo)
             items(2) {
-                ProximamenteCard("Festival de las Flores", "NOV", 1, "Antigua Guatemala", 0, R.drawable.festival)
+                ProximamenteCard(
+                    modifier = Modifier.clickable(onClick = onEvent),
+                    "Festival de las Flores",
+                    "NOV",
+                    1,
+                    "Antigua Guatemala",
+                    0,
+                    R.drawable.festival)
             }
         }
     }
@@ -416,7 +429,9 @@ fun ProximamenteCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(modifier = Modifier.height(32.dp).width(52.dp)) {
+                    Box(modifier = Modifier
+                        .height(32.dp)
+                        .width(52.dp)) {
                         Surface(
                             modifier = Modifier.size(32.dp),
                             shape = RoundedCornerShape(16.dp),

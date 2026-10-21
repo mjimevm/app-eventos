@@ -28,7 +28,8 @@ fun NavGraphBuilder.registerNestNav(navController: NavController) {
             },
             onCreateBussinesAccount = {
                 navController.navigateToRegisterBusiness()
-            }
+            },
+            onBack = {navController.navigateUp()}
         )
         registerBusinessScreen(
             onCreate = {

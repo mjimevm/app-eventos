@@ -13,6 +13,7 @@ import androidx.navigation.navOptions
 import plat.proyecto.guatevivo.paginas.event.ui.create.createEventScreen
 import plat.proyecto.guatevivo.paginas.event.ui.create.navigateToCreateEvent
 import plat.proyecto.guatevivo.paginas.event.ui.info.eventInfoScreen
+import plat.proyecto.guatevivo.paginas.event.ui.info.navigateToEventInfo
 import plat.proyecto.guatevivo.paginas.home.ui.home.homeScreen
 import plat.proyecto.guatevivo.paginas.home.ui.home.navigateToHome
 import plat.proyecto.guatevivo.paginas.home.ui.search.navigateToSearch
@@ -73,6 +74,9 @@ fun NavigationHost(
                 },
                 onProfileClick = {
                     navController.navigateToProfileNest()
+                },
+                onEvent = {
+                    navController.navigateToEventInfo()
                 }
             )
             searchScreen(
@@ -85,6 +89,9 @@ fun NavigationHost(
                 },
                 onProfileClick = {
                     navController.navigateToProfileNest()
+                },
+                onEvent = {
+                    navController.navigateToEventInfo()
                 }
             )
             createEventScreen(

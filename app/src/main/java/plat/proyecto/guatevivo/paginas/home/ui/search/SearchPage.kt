@@ -3,6 +3,7 @@ package plat.proyecto.guatevivo.paginas.home.ui.search
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,14 +38,16 @@ fun NavGraphBuilder.searchScreen(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onEvent: () -> Unit
 ) {
     composable<SearchDestination> {
         SearchRoute(
             onHomeClick = onHomeClick,
             onSearchClick = onSearchClick,
             onCreateClick = onCreateClick,
-            onProfileClick = onProfileClick
+            onProfileClick = onProfileClick,
+            onEvent = onEvent
         )
     }
 }
@@ -54,13 +57,15 @@ fun SearchRoute(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onEvent: () -> Unit
 ) {
     SearchPage(
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
-        onProfileClick = onProfileClick
+        onProfileClick = onProfileClick,
+        onEvent = onEvent
     )
 }
 
@@ -71,7 +76,8 @@ private fun SearchPage(
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onEvent: () -> Unit = {}
 ) {
     var selectedCategory by remember { mutableStateOf("Populares") }
 
@@ -167,6 +173,7 @@ private fun SearchPage(
                     ubicacion = "Sumpango, Sacatepéquez",
                     cantidadAmigos = 2,
                     imageResId = R.drawable.festival,
+                    modifier = modifier.clickable(onClick = onEvent)
                 )
             }
             item {
