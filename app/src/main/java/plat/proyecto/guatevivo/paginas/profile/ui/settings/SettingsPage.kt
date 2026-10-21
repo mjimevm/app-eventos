@@ -34,13 +34,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object SettingsDestination
+
+fun NavController.navigateToSettings(navOptions: NavOptions? = null) {
+    navigate(SettingsDestination, navOptions)
+}
+
+fun NavGraphBuilder.settingsScreen() {
+    composable<SettingsDestination> {
+        SettingsRoute()
+    }
+}
+
 @Composable
-fun SettingsPage(
+fun SettingsRoute() {
+    SettingsPage()
+}
+
+@Composable
+private fun SettingsPage(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
     onLocationClick: () -> Unit = {},

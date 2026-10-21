@@ -26,11 +26,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object HomeDestination
+
+fun NavController.navigateToHome(navOptions: NavOptions? = null) {
+    navigate(HomeDestination, navOptions)
+}
+
+fun NavGraphBuilder.homeScreen() {
+    composable<HomeDestination> {
+        HomeRoute()
+    }
+}
+
+@Composable
+fun HomeRoute() {
+    HomeScreen()
+}
 
 data class CarouselItem (
     val id: Int,
@@ -113,7 +135,7 @@ fun DestacadosCarousel(items: List<CarouselItem>) {
 }
 
 @Composable
-fun HomeScreen() {
+private fun HomeScreen() {
     Scaffold(
         topBar = {
             TopBar(false)

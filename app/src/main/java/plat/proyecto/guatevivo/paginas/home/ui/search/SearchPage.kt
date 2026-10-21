@@ -13,6 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
@@ -21,9 +26,27 @@ import plat.proyecto.guatevivo.paginas.home.ui.home.SearchBarSection
 import plat.proyecto.guatevivo.paginas.home.ui.home.SectionHeader
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object SearchDestination
+
+fun NavController.navigateToSearch(navOptions: NavOptions? = null) {
+    navigate(SearchDestination, navOptions)
+}
+
+fun NavGraphBuilder.searchScreen() {
+    composable<SearchDestination> {
+        SearchRoute()
+    }
+}
+
+@Composable
+fun SearchRoute() {
+    SearchPage()
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SearchPage(
+private fun SearchPage(
     modifier: Modifier = Modifier,
     onBottomClick: (Int) -> Unit = {},
 ) {

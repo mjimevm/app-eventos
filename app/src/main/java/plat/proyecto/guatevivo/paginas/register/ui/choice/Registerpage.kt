@@ -16,13 +16,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object RegisterDestination
+
+fun NavController.navigateToRegister(navOptions: NavOptions? = null) {
+    navigate(RegisterDestination, navOptions)
+}
+
+fun NavGraphBuilder.registerScreen() {
+    composable<RegisterDestination> {
+        RegisterRoute()
+    }
+}
+
+@Composable
+fun RegisterRoute() {
+    Register()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Register(modifier: Modifier = Modifier,
+private fun Register(modifier: Modifier = Modifier,
              onCreateNormalAccount: () -> Unit = {},
              onCreateBussinesAccount: () -> Unit = {}) {
     Scaffold(

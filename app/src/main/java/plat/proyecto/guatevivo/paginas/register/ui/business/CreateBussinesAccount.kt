@@ -23,10 +23,33 @@ import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.TopBar
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
+
+@Serializable
+data object RegisterBusinessDestination
+
+fun NavController.navigateToRegisterBusiness(navOptions: NavOptions? = null) {
+    navigate(RegisterBusinessDestination, navOptions)
+}
+
+fun NavGraphBuilder.registerBusinessScreen() {
+    composable<RegisterBusinessDestination> {
+        CreateBusinessRoute()
+    }
+}
+
+@Composable
+fun CreateBusinessRoute() {
+    CreateBussinesAccount()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateBussinesAccount(
+private fun CreateBussinesAccount(
     modifier: Modifier = Modifier
 ) {
     val nombreEmpresaState = rememberTextFieldState()

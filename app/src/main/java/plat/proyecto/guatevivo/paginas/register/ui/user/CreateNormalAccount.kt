@@ -26,11 +26,33 @@ import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.TopBar
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object RegisterUserDestination
+
+fun NavController.navigateToRegisterUser(navOptions: NavOptions? = null) {
+    navigate(RegisterUserDestination, navOptions)
+}
+
+fun NavGraphBuilder.registerUserScreen() {
+    composable<RegisterUserDestination> {
+        RegisterUserRoute()
+    }
+}
+
+@Composable
+fun RegisterUserRoute() {
+    CreateNormalAccount()
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateNormalAccount(
+private fun CreateNormalAccount(
     modifier: Modifier = Modifier
 ) {
     val nombreState = rememberTextFieldState()

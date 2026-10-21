@@ -38,6 +38,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
@@ -45,11 +50,29 @@ import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteCard
 import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteItem
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
+@Serializable
+data object UserAccountDestination
+
+fun NavController.navigateToUserAccount(navOptions: NavOptions? = null) {
+    navigate(UserAccountDestination, navOptions)
+}
+
+fun NavGraphBuilder.userAccountScreen() {
+    composable<UserAccountDestination> {
+        UserAccountRoute()
+    }
+}
+
 @Composable
-fun AccountPage(
+fun UserAccountRoute() {
+    AccountPage()
+}
+
+@Composable
+private fun AccountPage(
     modifier: Modifier = Modifier,
-    usuario: String,
-    correo: String,
+    usuario: String = "",
+    correo: String = "",
     imagenPerfil: Int? = null,
     onBackClick: () -> Unit = {},
     onAjustes: () -> Unit = {},

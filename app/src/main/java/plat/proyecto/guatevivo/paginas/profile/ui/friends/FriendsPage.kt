@@ -44,10 +44,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.paginas.home.ui.home.SearchBarSection
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
+
+@Serializable
+data object FriendsDestination
+
+fun NavController.navigateToFriends(navOptions: NavOptions? = null) {
+    navigate(FriendsDestination, navOptions)
+}
+
+fun NavGraphBuilder.friendsScreen() {
+    composable<FriendsDestination> {
+        FriendsRoute()
+    }
+}
+
+@Composable
+fun FriendsRoute() {
+    FriendsScreen()
+}
 
 data class Friend(
     val id: String,
@@ -57,8 +80,8 @@ data class Friend(
 )
 
 @Composable
-fun FriendsScreen(
-    friends: List<Friend>,
+private fun FriendsScreen(
+    friends: List<Friend> = emptyList(),
     modifier: Modifier = Modifier,
     friendRequests: List<Friend> = emptyList(),
     initialTab: Int = 0,
