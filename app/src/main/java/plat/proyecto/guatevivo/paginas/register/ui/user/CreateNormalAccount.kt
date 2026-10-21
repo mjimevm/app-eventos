@@ -40,21 +40,34 @@ fun NavController.navigateToRegisterUser(navOptions: NavOptions? = null) {
     navigate(RegisterUserDestination, navOptions)
 }
 
-fun NavGraphBuilder.registerUserScreen(onCreate: () -> Unit) {
+fun NavGraphBuilder.registerUserScreen(
+    onCreate: () -> Unit,
+    onBack: () -> Unit
+    ) {
     composable<RegisterUserDestination> {
-        RegisterUserRoute(onCreate = onCreate)
+        RegisterUserRoute(
+            onCreate = onCreate,
+            onBack = onBack
+            )
     }
 }
 
 @Composable
-fun RegisterUserRoute(onCreate: () -> Unit) {
-    CreateNormalAccount(onCreate = onCreate)
+fun RegisterUserRoute(
+    onCreate: () -> Unit,
+    onBack: () -> Unit
+    ) {
+    CreateNormalAccount(
+        onCreate = onCreate,
+        onBack = onBack
+    )
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateNormalAccount(
     modifier: Modifier = Modifier,
-    onCreate: () -> Unit
+    onCreate: () -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     val nombreState = rememberTextFieldState()
     val apellidoState = rememberTextFieldState()
@@ -68,7 +81,7 @@ private fun CreateNormalAccount(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopBar(showBackButton = true)
+            TopBar(showBackButton = true, onBackClick = onBack)
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->

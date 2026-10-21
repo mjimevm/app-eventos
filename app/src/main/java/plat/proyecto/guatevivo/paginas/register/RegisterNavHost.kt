@@ -34,12 +34,14 @@ fun NavGraphBuilder.registerNestNav(navController: NavController) {
         registerBusinessScreen(
             onCreate = {
                 navController.navigateToHome()
-            }
+            },
+            onBack = {navController.navigateUp()}
         )
         registerUserScreen(
             onCreate = {
                 navController.navigateToHome()
-            }
+            },
+            onBack = {navController.navigateUp()}
         )
     }
 }
