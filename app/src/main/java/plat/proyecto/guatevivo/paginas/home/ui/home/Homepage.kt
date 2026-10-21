@@ -43,15 +43,35 @@ fun NavController.navigateToHome(navOptions: NavOptions? = null) {
     navigate(HomeDestination, navOptions)
 }
 
-fun NavGraphBuilder.homeScreen() {
+fun NavGraphBuilder.homeScreen(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
     composable<HomeDestination> {
-        HomeRoute()
+        HomeRoute(
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick
+        )
     }
 }
 
 @Composable
-fun HomeRoute() {
-    HomeScreen()
+fun HomeRoute(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    HomeScreen(
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick
+    )
 }
 
 data class CarouselItem (
@@ -135,13 +155,28 @@ fun DestacadosCarousel(items: List<CarouselItem>) {
 }
 
 @Composable
-private fun HomeScreen() {
+private fun HomeScreen(
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopBar(false)
         },
         bottomBar = {
-            BottomNavigationBar()
+            BottomNavigationBar(
+                selectedItem = 0,
+                onItemClick = { index ->
+                    when (index) {
+                        0 -> onHomeClick()
+                        1 -> onSearchClick()
+                        2 -> onCreateClick()
+                        3 -> onProfileClick()
+                    }
+                }
+            )
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->
@@ -293,6 +328,7 @@ data class ProximamenteItem(
 
 @Composable
 fun ProximamenteCard(
+    modifier: Modifier = Modifier,
     titulo: String,
     fecha: String,
     dia: Int,

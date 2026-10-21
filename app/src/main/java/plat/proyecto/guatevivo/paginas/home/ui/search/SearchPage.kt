@@ -33,22 +33,45 @@ fun NavController.navigateToSearch(navOptions: NavOptions? = null) {
     navigate(SearchDestination, navOptions)
 }
 
-fun NavGraphBuilder.searchScreen() {
+fun NavGraphBuilder.searchScreen(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
     composable<SearchDestination> {
-        SearchRoute()
+        SearchRoute(
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick
+        )
     }
 }
 
 @Composable
-fun SearchRoute() {
-    SearchPage()
+fun SearchRoute(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    SearchPage(
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SearchPage(
     modifier: Modifier = Modifier,
-    onBottomClick: (Int) -> Unit = {},
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
     var selectedCategory by remember { mutableStateOf("Populares") }
 
@@ -67,7 +90,14 @@ private fun SearchPage(
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = 1,
-                onItemClick = onBottomClick,
+                onItemClick = { index ->
+                    when (index) {
+                        0 -> onHomeClick()
+                        1 -> onSearchClick()
+                        2 -> onCreateClick()
+                        3 -> onProfileClick()
+                    }
+                },
             )
         },
     ) { paddingValues ->

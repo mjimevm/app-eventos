@@ -4,6 +4,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,20 +59,53 @@ fun NavController.navigateToBusinessAccount(navOptions: NavOptions? = null) {
     navigate(BusinessAccountDestination, navOptions)
 }
 
-fun NavGraphBuilder.businessAccountScreen() {
+fun NavGraphBuilder.businessAccountScreen(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onAjustes: () -> Unit,
+    onEvent: () -> Unit
+) {
     composable<BusinessAccountDestination> {
-        BusinessAccountRoute()
+        BusinessAccountRoute(
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick,
+            onAjustes = onAjustes,
+            onEvent = onEvent
+        )
     }
 }
 
 @Composable
-fun BusinessAccountRoute() {
-    BussinesAccountPage()
+fun BusinessAccountRoute(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onAjustes: () -> Unit,
+    onEvent: () -> Unit
+) {
+    BussinesAccountPage(
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick,
+        onAjustes = onAjustes,
+        onEvent = onEvent
+    )
 }
 
 @Composable
 private fun BussinesAccountPage(
     modifier: Modifier = Modifier,
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onEvent: () -> Unit = {},
     usuario: String = "",
     correo: String = "",
     imagenPerfil: Int? = null,
@@ -79,7 +113,6 @@ private fun BussinesAccountPage(
     ubicacion: String = "",
     onBackClick: () -> Unit = {},
     onAjustes: () -> Unit = {},
-    onBottomClick: (Int) -> Unit = {},
     listaPublicados: List<ProximamenteItem> = listOf(),
     listaCreados: List<ProximamenteItem> = listOf()
 ) {
@@ -237,13 +270,24 @@ private fun BussinesAccountPage(
                         dia = item.dia,
                         ubicacion = item.ubicacion,
                         cantidadAmigos = 0,
-                        imageResId = item.imageResId
+                        imageResId = item.imageResId,
+                        modifier = Modifier.clickable(onClick = onEvent)
                     )
                 }
             }
         }
 
-        BottomNavigationBar(selectedItem = 3, onItemClick = onBottomClick)
+        BottomNavigationBar(
+            selectedItem = 3,
+            onItemClick = { index ->
+                when (index) {
+                    0 -> onHomeClick()
+                    1 -> onSearchClick()
+                    2 -> onCreateClick()
+                    3 -> onProfileClick()
+                }
+            }
+        )
     }
 }
 

@@ -38,20 +38,45 @@ fun NavController.navigateToCreateEvent(navOptions: NavOptions? = null) {
     navigate(CreateEventDestination, navOptions)
 }
 
-fun NavGraphBuilder.createEventScreen() {
+fun NavGraphBuilder.createEventScreen(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
     composable<CreateEventDestination> {
-        CreateRoute()
+        CreateRoute(
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick
+        )
     }
 }
 
 @Composable
-fun CreateRoute() {
-    CreateEventScreen()
+fun CreateRoute(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    CreateEventScreen(
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CreateEventScreen() {
+private fun CreateEventScreen(
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
+) {
     var nombreEvento by remember { mutableStateOf("") }
     var ubicacion by remember { mutableStateOf("") }
     var fecha by remember { mutableStateOf("") }
@@ -64,7 +89,17 @@ private fun CreateEventScreen() {
             TopBar(showBackButton = false)
         },
         bottomBar = {
-            BottomNavigationBar(selectedItem = 2)
+            BottomNavigationBar(
+                selectedItem = 2,
+                onItemClick = { index ->
+                    when (index) {
+                        0 -> onHomeClick()
+                        1 -> onSearchClick()
+                        2 -> onCreateClick()
+                        3 -> onProfileClick()
+                    }
+                }
+            )
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->

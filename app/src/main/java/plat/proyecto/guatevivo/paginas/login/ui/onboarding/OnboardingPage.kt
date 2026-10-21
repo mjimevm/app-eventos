@@ -56,15 +56,20 @@ fun NavController.navigateToOnBoarding(navOptions: NavOptions? = null) {
     navigate(onBoardingDestination, navOptions)
 }
 
-fun NavGraphBuilder.onBoardingScreen() {
+fun NavGraphBuilder.onBoardingScreen(
+    onIniciarSesion: () -> Unit,
+    onCrearCuenta: () -> Unit
+) {
     composable<onBoardingDestination> {
-        OnBoardingRoute()
+        OnBoardingRoute(onIniciarSesion = onIniciarSesion, onCrearCuenta = onCrearCuenta)
     }
 }
 
 @Composable
-fun OnBoardingRoute() {
-    OnboardingPage()
+fun OnBoardingRoute(onIniciarSesion: () -> Unit,
+                    onCrearCuenta: () -> Unit
+) {
+    OnboardingPage(onIniciarSesion = onIniciarSesion, onCrearCuenta = onCrearCuenta)
 }
 
 @Composable

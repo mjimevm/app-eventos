@@ -41,20 +41,49 @@ fun NavController.navigateToEventInfo(navOptions: NavOptions? = null) {
     navigate(EventInfoDestination, navOptions)
 }
 
-fun NavGraphBuilder.eventInfoScreen() {
+fun NavGraphBuilder.eventInfoScreen(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onBackArrow: () -> Unit
+) {
     composable<EventInfoDestination> {
-        EventInfoRoute()
+        EventInfoRoute(
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick,
+            onBackArrow = onBackArrow
+        )
     }
 }
 
 @Composable
-fun EventInfoRoute() {
-    EventoInfoPage()
+fun EventInfoRoute(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onBackArrow: () -> Unit
+) {
+    EventoInfoPage(
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick,
+        onBackArrow = onBackArrow
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventoInfoPage(
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onBackArrow: () -> Unit = {},
     titulo: String = "Festival de las Flores",
     miniDescripcion: String = "La celebración anual más grande del arte y la música en la ciudad colonial.",
     dia: String = "14 y 15",
@@ -70,11 +99,21 @@ private fun EventoInfoPage(
         topBar = {
             TopBar(
                 showBackButton = true,
-                onBackClick = { /* TODO: Navegar hacia atrás */ }
+                onBackClick = onBackArrow
             )
         },
         bottomBar = {
-            BottomNavigationBar()
+            BottomNavigationBar(
+                selectedItem = 0,
+                onItemClick = { index ->
+                    when (index) {
+                        0 -> onHomeClick()
+                        1 -> onSearchClick()
+                        2 -> onCreateClick()
+                        3 -> onProfileClick()
+                    }
+                }
+            )
         },
         containerColor = surfaceColor
     ) { padding ->

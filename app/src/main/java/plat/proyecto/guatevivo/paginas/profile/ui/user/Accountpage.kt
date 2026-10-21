@@ -4,6 +4,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,26 +58,62 @@ fun NavController.navigateToUserAccount(navOptions: NavOptions? = null) {
     navigate(UserAccountDestination, navOptions)
 }
 
-fun NavGraphBuilder.userAccountScreen() {
+fun NavGraphBuilder.userAccountScreen(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onAjustes: () -> Unit,
+    onAmistades: () -> Unit,
+    onEvent: () -> Unit
+) {
     composable<UserAccountDestination> {
-        UserAccountRoute()
+        UserAccountRoute(
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick,
+            onAjustes = onAjustes,
+            onAmistades = onAmistades,
+            onEvent = onEvent
+        )
     }
 }
 
 @Composable
-fun UserAccountRoute() {
-    AccountPage()
+fun UserAccountRoute(
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onAjustes: () -> Unit,
+    onAmistades: () -> Unit,
+    onEvent: () -> Unit
+) {
+    AccountPage(
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick,
+        onAjustes = onAjustes,
+        onAmistades = onAmistades,
+        onEvent = onEvent
+    )
 }
 
 @Composable
 private fun AccountPage(
     modifier: Modifier = Modifier,
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onEvent: () -> Unit = {},
     usuario: String = "",
     correo: String = "",
     imagenPerfil: Int? = null,
     onBackClick: () -> Unit = {},
     onAjustes: () -> Unit = {},
-    onBottomClick: (Int) -> Unit = {},
     onAmistades: () -> Unit = {},
     listaAsistidos: List<ProximamenteItem> = listOf(),
     listaCreados: List<ProximamenteItem> = listOf(),
@@ -273,13 +310,24 @@ private fun AccountPage(
                         dia = item.dia,
                         ubicacion = item.ubicacion,
                         cantidadAmigos = 0,
-                        imageResId = item.imageResId
+                        imageResId = item.imageResId,
+                        modifier = modifier.clickable(onClick = onEvent)
                     )
                 }
             }
         }
 
-        BottomNavigationBar(selectedItem = 3, onItemClick = onBottomClick)
+        BottomNavigationBar(
+            selectedItem = 3,
+            onItemClick = { index ->
+                when (index) {
+                    0 -> onHomeClick()
+                    1 -> onSearchClick()
+                    2 -> onCreateClick()
+                    3 -> onProfileClick()
+                }
+            }
+        )
     }
 }
 

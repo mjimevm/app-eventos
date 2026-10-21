@@ -50,14 +50,20 @@ fun NavController.navigateToLogin(navOptions: NavOptions? = null) {
     navigate(LoginDestination, navOptions)
 }
 
-fun NavGraphBuilder.loginScreen() {
+fun NavGraphBuilder.loginScreen(
+    onIniciarSesion: () -> Unit,
+    onCrearCuenta: () -> Unit,
+) {
     composable<LoginDestination> {
-        LoginRoute()
+        LoginRoute(onIniciarSesion = onIniciarSesion, onCrearCuenta = onCrearCuenta)
     }
 }
 @Composable
-fun LoginRoute() {
-    Login()
+fun LoginRoute(
+    onIniciarSesion: () -> Unit,
+    onCrearCuenta: () -> Unit,
+) {
+    Login(onIniciarSesion = onIniciarSesion, onCrearCuenta = onCrearCuenta)
 }
 
 @Composable

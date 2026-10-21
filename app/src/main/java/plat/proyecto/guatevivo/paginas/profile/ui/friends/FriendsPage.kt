@@ -61,15 +61,39 @@ fun NavController.navigateToFriends(navOptions: NavOptions? = null) {
     navigate(FriendsDestination, navOptions)
 }
 
-fun NavGraphBuilder.friendsScreen() {
+fun NavGraphBuilder.friendsScreen(
+    onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
     composable<FriendsDestination> {
-        FriendsRoute()
+        FriendsRoute(
+            onBackClick = onBackClick,
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick
+        )
     }
 }
 
 @Composable
-fun FriendsRoute() {
-    FriendsScreen()
+fun FriendsRoute(
+    onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    FriendsScreen(
+        onBackClick = onBackClick,
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick
+    )
 }
 
 data class Friend(
@@ -81,6 +105,10 @@ data class Friend(
 
 @Composable
 private fun FriendsScreen(
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     friends: List<Friend> = emptyList(),
     modifier: Modifier = Modifier,
     friendRequests: List<Friend> = emptyList(),
@@ -96,10 +124,20 @@ private fun FriendsScreen(
 
     Scaffold(
         topBar = {
-            TopBar(true)
+            TopBar(true, onBackClick = onBackClick)
         },
         bottomBar = {
-            BottomNavigationBar(selectedItem = -1)
+            BottomNavigationBar(
+                selectedItem = -1,
+                onItemClick = { index ->
+                    when (index) {
+                        0 -> onHomeClick()
+                        1 -> onSearchClick()
+                        2 -> onCreateClick()
+                        3 -> onProfileClick()
+                    }
+                }
+            )
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->

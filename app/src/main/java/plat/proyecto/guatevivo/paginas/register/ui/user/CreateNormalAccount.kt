@@ -40,20 +40,21 @@ fun NavController.navigateToRegisterUser(navOptions: NavOptions? = null) {
     navigate(RegisterUserDestination, navOptions)
 }
 
-fun NavGraphBuilder.registerUserScreen() {
+fun NavGraphBuilder.registerUserScreen(onCreate: () -> Unit) {
     composable<RegisterUserDestination> {
-        RegisterUserRoute()
+        RegisterUserRoute(onCreate = onCreate)
     }
 }
 
 @Composable
-fun RegisterUserRoute() {
-    CreateNormalAccount()
+fun RegisterUserRoute(onCreate: () -> Unit) {
+    CreateNormalAccount(onCreate = onCreate)
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateNormalAccount(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCreate: () -> Unit
 ) {
     val nombreState = rememberTextFieldState()
     val apellidoState = rememberTextFieldState()
@@ -200,7 +201,7 @@ private fun CreateNormalAccount(
             }
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = onCreate,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
@@ -286,6 +287,6 @@ private fun InputField(
 @Composable
 fun CreateNormalAccountPreview() {
     GuatevivoTheme {
-        CreateNormalAccount()
+        CreateNormalAccount(onCreate = {})
     }
 }

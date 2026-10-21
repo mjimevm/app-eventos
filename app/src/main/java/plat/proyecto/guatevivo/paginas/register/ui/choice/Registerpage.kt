@@ -32,15 +32,21 @@ fun NavController.navigateToRegister(navOptions: NavOptions? = null) {
     navigate(RegisterDestination, navOptions)
 }
 
-fun NavGraphBuilder.registerScreen() {
+fun NavGraphBuilder.registerScreen(
+    onCreateNormalAccount: () -> Unit,
+    onCreateBussinesAccount: () -> Unit
+) {
     composable<RegisterDestination> {
-        RegisterRoute()
+        RegisterRoute(onCreateNormalAccount = onCreateNormalAccount, onCreateBussinesAccount = onCreateBussinesAccount)
     }
 }
 
 @Composable
-fun RegisterRoute() {
-    Register()
+fun RegisterRoute(
+    onCreateNormalAccount: () -> Unit,
+    onCreateBussinesAccount: () -> Unit
+) {
+    Register(onCreateNormalAccount = onCreateNormalAccount, onCreateBussinesAccount = onCreateBussinesAccount)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

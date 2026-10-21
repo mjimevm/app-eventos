@@ -51,20 +51,52 @@ fun NavController.navigateToSettings(navOptions: NavOptions? = null) {
     navigate(SettingsDestination, navOptions)
 }
 
-fun NavGraphBuilder.settingsScreen() {
+fun NavGraphBuilder.settingsScreen(
+    onBackClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
     composable<SettingsDestination> {
-        SettingsRoute()
+        SettingsRoute(
+            onBackClick = onBackClick,
+            onLogoutClick = onLogoutClick,
+            onHomeClick = onHomeClick,
+            onSearchClick = onSearchClick,
+            onCreateClick = onCreateClick,
+            onProfileClick = onProfileClick
+        )
     }
 }
 
 @Composable
-fun SettingsRoute() {
-    SettingsPage()
+fun SettingsRoute(
+    onBackClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    SettingsPage(
+        onBackClick = onBackClick,
+        onLogoutClick = onLogoutClick,
+        onHomeClick = onHomeClick,
+        onSearchClick = onSearchClick,
+        onCreateClick = onCreateClick,
+        onProfileClick = onProfileClick
+    )
 }
 
 @Composable
 private fun SettingsPage(
     modifier: Modifier = Modifier,
+    onHomeClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onCreateClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onLocationClick: () -> Unit = {},
     onHelpClick: () -> Unit = {},
@@ -77,10 +109,20 @@ private fun SettingsPage(
 
     Scaffold(
         topBar = {
-            TopBar(true)
+            TopBar(true, onBackClick = onBackClick)
         },
         bottomBar = {
-            BottomNavigationBar(selectedItem = -1)
+            BottomNavigationBar(
+                selectedItem = -1,
+                onItemClick = { index ->
+                    when (index) {
+                        0 -> onHomeClick()
+                        1 -> onSearchClick()
+                        2 -> onCreateClick()
+                        3 -> onProfileClick()
+                    }
+                }
+            )
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->

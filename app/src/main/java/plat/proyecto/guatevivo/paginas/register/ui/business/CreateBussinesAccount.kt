@@ -36,21 +36,22 @@ fun NavController.navigateToRegisterBusiness(navOptions: NavOptions? = null) {
     navigate(RegisterBusinessDestination, navOptions)
 }
 
-fun NavGraphBuilder.registerBusinessScreen() {
+fun NavGraphBuilder.registerBusinessScreen(onCreate: () -> Unit) {
     composable<RegisterBusinessDestination> {
-        CreateBusinessRoute()
+        CreateBusinessRoute(onCreate = onCreate)
     }
 }
 
 @Composable
-fun CreateBusinessRoute() {
-    CreateBussinesAccount()
+fun CreateBusinessRoute(onCreate: () -> Unit) {
+    CreateBussinesAccount(onCreate = onCreate)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateBussinesAccount(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCreate: () -> Unit = {}
 ) {
     val nombreEmpresaState = rememberTextFieldState()
     val emailEmpresarialState = rememberTextFieldState()
@@ -197,7 +198,7 @@ private fun CreateBussinesAccount(
             }
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = onCreate,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
