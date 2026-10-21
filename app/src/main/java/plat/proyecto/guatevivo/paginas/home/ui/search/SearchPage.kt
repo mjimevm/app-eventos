@@ -3,7 +3,6 @@ package plat.proyecto.guatevivo.paginas.home.ui.search
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -173,7 +172,7 @@ private fun SearchPage(
                     ubicacion = "Sumpango, Sacatepéquez",
                     cantidadAmigos = 2,
                     imageResId = R.drawable.festival,
-                    modifier = modifier.clickable(onClick = onEvent)
+                    onEvent = onEvent
                 )
             }
             item {
@@ -184,6 +183,7 @@ private fun SearchPage(
                     ubicacion = "Panajachel, Atitlán",
                     cantidadAmigos = 2,
                     imageResId = R.drawable.panajachel,
+                    onEvent = onEvent
                 )
             }
         }

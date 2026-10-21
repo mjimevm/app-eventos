@@ -4,7 +4,6 @@ import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -311,7 +310,7 @@ private fun AccountPage(
                         ubicacion = item.ubicacion,
                         cantidadAmigos = 0,
                         imageResId = item.imageResId,
-                        modifier = modifier.clickable(onClick = onEvent)
+                        onEvent = onEvent
                     )
                 }
             }

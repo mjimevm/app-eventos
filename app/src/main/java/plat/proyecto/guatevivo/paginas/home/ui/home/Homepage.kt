@@ -88,12 +88,15 @@ data class CarouselItem (
 
 @Composable
 fun DestacadosCard(
+    onEvent: () -> Unit,
     titulo: String,
     ubicacion: String,
     @DrawableRes imageResId: Int
 ) {
     Card(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(enabled = true, onClick = onEvent),
         shape = RoundedCornerShape(4.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -139,7 +142,7 @@ fun DestacadosCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DestacadosCarousel(items: List<CarouselItem>) {
+fun DestacadosCarousel(items: List<CarouselItem>, onEvent: () -> Unit) {
     HorizontalMultiBrowseCarousel(
         state = rememberCarouselState { items.count() },
         preferredItemWidth = 330.dp,
@@ -154,7 +157,8 @@ fun DestacadosCarousel(items: List<CarouselItem>) {
         DestacadosCard(
             titulo = item.titulo,
             ubicacion = item.ubicacion,
-            imageResId = item.imageResId
+            imageResId = item.imageResId,
+            onEvent = onEvent
         )
     }
 }
@@ -215,7 +219,7 @@ private fun HomeScreen(
                     CarouselItem(1, R.drawable.feria, "Concierto en Atitlán", "Panajachel, Sololá"),
                     CarouselItem(2, R.drawable.panajachel, "Feria de noviembre", "Ciudad de Guatemala"),
                 )
-                DestacadosCarousel(items = destacadosItems)
+                DestacadosCarousel(items = destacadosItems, onEvent = onEvent)
             }
 
             // 4. Sección Próximamente
@@ -226,7 +230,7 @@ private fun HomeScreen(
             // Lista de eventos próximos (ejemplo)
             items(2) {
                 ProximamenteCard(
-                    modifier = Modifier.clickable(onClick = onEvent),
+                    onEvent = onEvent,
                     "Festival de las Flores",
                     "NOV",
                     1,
@@ -341,7 +345,7 @@ data class ProximamenteItem(
 
 @Composable
 fun ProximamenteCard(
-    modifier: Modifier = Modifier,
+    onEvent: () -> Unit = {},
     titulo: String,
     fecha: String,
     dia: Int,
@@ -351,6 +355,7 @@ fun ProximamenteCard(
 ) {
     Card(
         modifier = Modifier
+            .clickable(enabled = true, onClick = onEvent)
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(4.dp),

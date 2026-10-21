@@ -104,7 +104,7 @@ private fun EventoInfoPage(
         },
         bottomBar = {
             BottomNavigationBar(
-                selectedItem = 0,
+                selectedItem = -1,
                 onItemClick = { index ->
                     when (index) {
                         0 -> onHomeClick()

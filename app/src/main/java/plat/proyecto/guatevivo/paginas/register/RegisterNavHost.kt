@@ -3,9 +3,11 @@ package plat.proyecto.guatevivo.paginas.register
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
+import androidx.navigation.navOptions
 import androidx.navigation.navigation
 import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.paginas.home.ui.home.navigateToHome
+import plat.proyecto.guatevivo.paginas.login.ui.AuthNavHost
 import plat.proyecto.guatevivo.paginas.register.ui.business.navigateToRegisterBusiness
 import plat.proyecto.guatevivo.paginas.register.ui.business.registerBusinessScreen
 import plat.proyecto.guatevivo.paginas.register.ui.choice.RegisterDestination
@@ -33,13 +35,27 @@ fun NavGraphBuilder.registerNestNav(navController: NavController) {
         )
         registerBusinessScreen(
             onCreate = {
-                navController.navigateToHome()
+                navController.navigateToHome(
+                    navOptions {
+                        popUpTo<AuthNavHost> {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                )
             },
             onBack = {navController.navigateUp()}
         )
         registerUserScreen(
             onCreate = {
-                navController.navigateToHome()
+                navController.navigateToHome(
+                    navOptions {
+                        popUpTo<AuthNavHost> {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                )
             },
             onBack = {navController.navigateUp()}
         )

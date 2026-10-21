@@ -14,18 +14,15 @@ import plat.proyecto.guatevivo.paginas.event.ui.create.createEventScreen
 import plat.proyecto.guatevivo.paginas.event.ui.create.navigateToCreateEvent
 import plat.proyecto.guatevivo.paginas.event.ui.info.eventInfoScreen
 import plat.proyecto.guatevivo.paginas.event.ui.info.navigateToEventInfo
+import plat.proyecto.guatevivo.paginas.home.ui.home.HomeDestination
 import plat.proyecto.guatevivo.paginas.home.ui.home.homeScreen
 import plat.proyecto.guatevivo.paginas.home.ui.home.navigateToHome
 import plat.proyecto.guatevivo.paginas.home.ui.search.navigateToSearch
 import plat.proyecto.guatevivo.paginas.home.ui.search.searchScreen
-import plat.proyecto.guatevivo.paginas.login.ui.login.loginScreen
-import plat.proyecto.guatevivo.paginas.login.ui.login.navigateToLogin
-import plat.proyecto.guatevivo.paginas.login.ui.onboarding.onBoardingDestination
-import plat.proyecto.guatevivo.paginas.login.ui.onboarding.onBoardingScreen
+import plat.proyecto.guatevivo.paginas.login.ui.AuthNavHost
+import plat.proyecto.guatevivo.paginas.login.ui.AuthNestNav
 import plat.proyecto.guatevivo.paginas.profile.navigateToProfileNest
 import plat.proyecto.guatevivo.paginas.profile.profileNestNav
-import plat.proyecto.guatevivo.paginas.register.navigateToRegisterNest
-import plat.proyecto.guatevivo.paginas.register.registerNestNav
 
 @Composable
 fun NavigationHost(
@@ -36,89 +33,77 @@ fun NavigationHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    val bottomBarOptions = navOptions {
+        popUpTo<HomeDestination> {
+            inclusive = false
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+
+    val onHome: () -> Unit = {
+        navController.navigateToHome(bottomBarOptions)
+    }
+
+    val onSearch: () -> Unit = {
+        navController.navigateToSearch(bottomBarOptions)
+    }
+
+    val onCreate: () -> Unit = {
+        navController.navigateToCreateEvent(bottomBarOptions)
+    }
+
+    val onProfile: () -> Unit = {
+        navController.navigateToProfileNest(bottomBarOptions)
+    }
+
+
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = onBoardingDestination,
+            startDestination = AuthNavHost,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            onBoardingScreen(
-                onIniciarSesion = {
-                    navController.navigateToLogin()
-                },
-                onCrearCuenta = {
-                    navController.navigateToRegisterNest()
-                }
+            AuthNestNav(navController)
+            profileNestNav(
+                navController,
+                isAccountBusiness = false, //TODO cambiar a variable segun el tipo de usuario
+                bottomBarOptions = bottomBarOptions
             )
-            loginScreen(
-                onIniciarSesion = {
-                    navController.navigateToHome()
-                },
-                onCrearCuenta = {
-                    navController.navigateToRegisterNest()
-                }
-            )
-            registerNestNav(navController)
-            profileNestNav(navController, isAccountBusiness = false) //TODO cambiar a variable segun el tipo de usuario
             homeScreen(
-                onHomeClick = {},//ya estamos aqui
-                onSearchClick = {
-                    navController.navigateToSearch()
-                },
-                onCreateClick = {
-                    navController.navigateToCreateEvent()
-                },
-                onProfileClick = {
-                    navController.navigateToProfileNest()
-                },
+                onHomeClick = {},
+                onSearchClick = onSearch,
+                onCreateClick = onCreate,
+                onProfileClick = onProfile,
                 onEvent = {
                     navController.navigateToEventInfo()
                 }
             )
             searchScreen(
-                onHomeClick = {
-                    navController.navigateToHome()
-                },
-                onSearchClick = {},//ya estamos aqui
-                onCreateClick = {
-                    navController.navigateToCreateEvent()
-                },
-                onProfileClick = {
-                    navController.navigateToProfileNest()
-                },
+                onHomeClick = onHome,
+                onSearchClick = {},
+                onCreateClick = onCreate,
+                onProfileClick = onProfile,
                 onEvent = {
                     navController.navigateToEventInfo()
                 }
             )
             createEventScreen(
-                onHomeClick = {
-                    navController.navigateToHome()
-                },
-                onSearchClick = {
-                    navController.navigateToSearch()
-                },
-                onCreateClick = {},//ya estamos aqui
-                onProfileClick = {
-                    navController.navigateToProfileNest()
-                }
+                onHomeClick = onHome,
+                onSearchClick = onSearch,
+                onCreateClick = {},
+                onProfileClick = onProfile
             )
             eventInfoScreen(
-                onHomeClick = {
-                    navController.navigateToHome()
-                },
-                onSearchClick = {
-                    navController.navigateToSearch()
-                },
-                onCreateClick = {
-                    navController.navigateToCreateEvent()
-                },
-                onProfileClick = {
-                    navController.navigateToProfileNest()
-                },
+                onHomeClick = onHome,
+                onSearchClick = onSearch,
+                onCreateClick = onCreate,
+                onProfileClick = onProfile,
                 onBackArrow = {
                     navController.navigateUp()
                 }
