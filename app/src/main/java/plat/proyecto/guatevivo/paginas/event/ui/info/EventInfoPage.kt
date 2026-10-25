@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -35,10 +38,10 @@ import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Serializable
-data object EventInfoDestination
+data class EventInfoDestination(val eventId: Int = 0)
 
-fun NavController.navigateToEventInfo(navOptions: NavOptions? = null) {
-    navigate(EventInfoDestination, navOptions)
+fun NavController.navigateToEventInfo(eventId: Int = 0, navOptions: NavOptions? = null) {
+    navigate(EventInfoDestination(eventId), navOptions)
 }
 
 fun NavGraphBuilder.eventInfoScreen(
@@ -65,9 +68,14 @@ fun EventInfoRoute(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onBackArrow: () -> Unit
+    onBackArrow: () -> Unit,
+    viewModel: EventInfoViewModel = viewModel()
 ) {
+    val state by viewModel.state.collectAsState()
+
     EventoInfoPage(
+        state = state,
+        onEvent = viewModel::onEvent,
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
@@ -79,19 +87,13 @@ fun EventInfoRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventoInfoPage(
+    state: EventInfoState = EventInfoState(),
+    onEvent: (EventInfoEvent) -> Unit = {},
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onBackArrow: () -> Unit = {},
-    titulo: String = "Festival de las Flores",
-    miniDescripcion: String = "La celebración anual más grande del arte y la música en la ciudad colonial.",
-    dia: String = "14 y 15",
-    mes: String = "Noviembre",
-    ubicacion: String = "Calle del Arco",
-    precio: String = "Entrada Gratis",
-    descripcionLarga: String = "El Festival de las Flores es un evento cultural y artístico anual que transforma por completo las calles coloniales de La Antigua Guatemala en un gigantesco lienzo botánico. Durante un fin de semana, la arquitectura barroca de la ciudad se fusiona con miles de colores y aromas naturales, atrayendo a miles de visitantes locales e internacionales.",
-    amigosAsistiran: List<Int> = listOf(R.drawable.account_circle, R.drawable.account_circle, R.drawable.account_circle)
+    onBackArrow: () -> Unit = {}
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
 
@@ -133,7 +135,7 @@ private fun EventoInfoPage(
                         .height(450.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.festival),
+                        painter = painterResource(id = state.imageResId),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -167,15 +169,42 @@ private fun EventoInfoPage(
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
                 ) {
+                    state.successMessage?.let { message ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp, bottom = 8.dp, start = 16.dp, end = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = message,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { onEvent(EventInfoEvent.ClearMessage) }) {
+                                    Text("Cerrar", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                }
+                            }
+                        }
+                    }
+
                     Text(
-                        text = titulo,
+                        text = state.titulo,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = miniDescripcion,
+                        text = state.miniDescripcion,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -188,14 +217,14 @@ private fun EventoInfoPage(
                     ) {
                         InfoBox(
                             modifier = Modifier.weight(1f),
-                            titulo = dia + " de",
-                            subtitulo = mes
+                            titulo = state.dia + " de",
+                            subtitulo = state.mes
 
                         )
                         InfoBox(
                             modifier = Modifier.weight(1f),
                             titulo = "Ver mapa",
-                            subtitulo = ubicacion
+                            subtitulo = state.ubicacion
                         )
                     }
 
@@ -208,7 +237,7 @@ private fun EventoInfoPage(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Text(
-                            text = precio,
+                            text = state.precio,
                             modifier = Modifier.padding(16.dp),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyLarge,
@@ -231,10 +260,10 @@ private fun EventoInfoPage(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            AmigosStack(amigosAsistiran)
+                            AmigosStack(state.amigosAsistiran)
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "${amigosAsistiran.size + 2} Amigos asistirán",
+                                text = "${state.amigosAsistiran.size + 2} Amigos asistirán",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -250,7 +279,7 @@ private fun EventoInfoPage(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = descripcionLarga,
+                        text = state.descripcionLarga,
                         style = MaterialTheme.typography.bodyLarge,
                         lineHeight = 24.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -260,22 +289,30 @@ private fun EventoInfoPage(
             }
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = { onEvent(EventInfoEvent.ToggleAttend) },
+                enabled = !state.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 24.dp, bottom = 12.dp, top = 8.dp)
                     .height(56.dp),
                 shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = if (state.isAttending) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text(
-                    text = "Asistir",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                } else {
+                    Text(
+                        text = if (state.isAttending) "¡Asistiendo! (Cancelar)" else "Asistir",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }
@@ -329,4 +366,3 @@ fun EventoInfoPagePreview() {
         EventoInfoPage()
     }
 }
-

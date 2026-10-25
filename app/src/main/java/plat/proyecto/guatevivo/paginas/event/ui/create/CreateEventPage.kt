@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -59,9 +60,14 @@ fun CreateRoute(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    viewModel: CreateEventViewModel = viewModel()
 ) {
+    val state by viewModel.state.collectAsState()
+
     CreateEventScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
@@ -72,18 +78,13 @@ fun CreateRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateEventScreen(
+    state: CreateEventState = CreateEventState(),
+    onEvent: (CreateEventEvent) -> Unit = {},
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    var nombreEvento by remember { mutableStateOf("") }
-    var ubicacion by remember { mutableStateOf("") }
-    var fecha by remember { mutableStateOf("") }
-    var hora by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var incluirConfirmacion by remember { mutableStateOf(true) }
-
     Scaffold(
         topBar = {
             TopBar(showBackButton = false)
@@ -133,6 +134,33 @@ private fun CreateEventScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                state.error?.let { errorMessage ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp, horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = { onEvent(CreateEventEvent.ClearError) }) {
+                                Text("Cerrar", color = MaterialTheme.colorScheme.onErrorContainer)
+                            }
+                        }
+                    }
+                }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(4.dp),
@@ -159,16 +187,16 @@ private fun CreateEventScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             InputField (
                                 label = "Nombre del Evento",
-                                value = nombreEvento,
-                                onValueChange = { nombreEvento = it },
+                                value = state.nombreEvento,
+                                onValueChange = { onEvent(CreateEventEvent.UpdateNombreEvento(it)) },
                                 placeholder = "Ej. Cena familiar",
                                 icon = null
                             )
 
                             InputField(
                                 label = "Ubicación",
-                                value = ubicacion,
-                                onValueChange = { ubicacion = it },
+                                value = state.ubicacion,
+                                onValueChange = { onEvent(CreateEventEvent.UpdateUbicacion(it)) },
                                 placeholder = "Ej. Ciudad de Guatemala",
                                 icon = R.drawable.location_icon
                             )
@@ -180,16 +208,16 @@ private fun CreateEventScreen(
                                 InputField(
                                     modifier = Modifier.weight(1f),
                                     label = "Fecha",
-                                    value = fecha,
-                                    onValueChange = { fecha = it },
+                                    value = state.fecha,
+                                    onValueChange = { onEvent(CreateEventEvent.UpdateFecha(it)) },
                                     placeholder = "--/--/----",
                                     icon = R.drawable.calendar_icon
                                 )
                                 InputField(
                                     modifier = Modifier.weight(1f),
                                     label = "Hora",
-                                    value = hora,
-                                    onValueChange = { hora = it },
+                                    value = state.hora,
+                                    onValueChange = { onEvent(CreateEventEvent.UpdateHora(it)) },
                                     placeholder = "--:--",
                                     icon = R.drawable.hour_icon
                                 )
@@ -197,8 +225,8 @@ private fun CreateEventScreen(
 
                             InputField(
                                 label = "Acerca del Evento",
-                                value = descripcion,
-                                onValueChange = { descripcion = it },
+                                value = state.descripcion,
+                                onValueChange = { onEvent(CreateEventEvent.UpdateDescripcion(it)) },
                                 placeholder = "Escribe una breve descripción",
                                 singleLine = false,
                                 minHeight = 100.dp
@@ -217,8 +245,8 @@ private fun CreateEventScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Checkbox(
-                        checked = incluirConfirmacion,
-                        onCheckedChange = { incluirConfirmacion = it },
+                        checked = state.incluirConfirmacion,
+                        onCheckedChange = { onEvent(CreateEventEvent.UpdateIncluirConfirmacion(it)) },
                         colors = CheckboxDefaults.colors(
                             checkedColor = MaterialTheme.colorScheme.primary
                         )
@@ -231,7 +259,8 @@ private fun CreateEventScreen(
             }
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = { onEvent(CreateEventEvent.CreateEvent) },
+                enabled = !state.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
@@ -241,13 +270,20 @@ private fun CreateEventScreen(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text(
-                    text = "Generar invitación",
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.surface
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                } else {
+                    Text(
+                        text = "Generar invitación",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                }
             }
         }
     }
@@ -269,7 +305,7 @@ private fun InputField(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom =.8.dp)
         )
         OutlinedTextField(
             value = value,
@@ -299,8 +335,9 @@ private fun InputField(
             singleLine = singleLine
         )
     }
+}
 
-}@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun CreateEventPreview() {

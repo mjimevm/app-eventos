@@ -16,6 +16,8 @@ import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -27,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -49,7 +52,7 @@ fun NavGraphBuilder.homeScreen(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: (Int) -> Unit
 ) {
     composable<HomeDestination> {
         HomeRoute(
@@ -68,23 +71,21 @@ fun HomeRoute(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: (Int) -> Unit,
+    viewModel: HomeViewModel = viewModel()
 ) {
+    val state by viewModel.state.collectAsState()
+
     HomeScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
         onProfileClick = onProfileClick,
-        onEvent = onEvent
+        onEventClick = onEvent
     )
 }
-
-data class CarouselItem (
-    val id: Int,
-    @DrawableRes val imageResId: Int,
-    val titulo: String,
-    val ubicacion: String
-)
 
 @Composable
 fun DestacadosCard(
@@ -142,7 +143,7 @@ fun DestacadosCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DestacadosCarousel(items: List<CarouselItem>, onEvent: () -> Unit) {
+fun DestacadosCarousel(items: List<CarouselItem>, onEventClick: (Int) -> Unit) {
     HorizontalMultiBrowseCarousel(
         state = rememberCarouselState { items.count() },
         preferredItemWidth = 330.dp,
@@ -158,18 +159,20 @@ fun DestacadosCarousel(items: List<CarouselItem>, onEvent: () -> Unit) {
             titulo = item.titulo,
             ubicacion = item.ubicacion,
             imageResId = item.imageResId,
-            onEvent = onEvent
+            onEvent = { onEventClick(item.id) }
         )
     }
 }
 
 @Composable
 private fun HomeScreen(
+    state: HomeState = HomeState(),
+    onEvent: (HomeEvent) -> Unit = {},
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onEvent: () -> Unit = {}
+    onEventClick: (Int) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -202,10 +205,10 @@ private fun HomeScreen(
 
             // 2. Filtros de Categorías
             item {
-                val categories = listOf("Todos", "Conciertos", "Cultura", "Gastronomía", "Moda")
                 CategoryFilters(
-                    categories = categories,
-                    onCategorySelected = { /* TODO */ }
+                    categories = state.categories,
+                    selectedCategory = state.selectedCategory,
+                    onCategorySelected = { category -> onEvent(HomeEvent.SelectCategory(category)) }
                 )
             }
 
@@ -214,12 +217,7 @@ private fun HomeScreen(
                 SectionHeader(title = "Destacados")
             }
             item {
-                val destacadosItems = listOf(
-                    CarouselItem(0, R.drawable.festival, "Festival de las Flores", "Antigua Guatemala"),
-                    CarouselItem(1, R.drawable.feria, "Concierto en Atitlán", "Panajachel, Sololá"),
-                    CarouselItem(2, R.drawable.panajachel, "Feria de noviembre", "Ciudad de Guatemala"),
-                )
-                DestacadosCarousel(items = destacadosItems, onEvent = onEvent)
+                DestacadosCarousel(items = state.destacadosItems, onEventClick = onEventClick)
             }
 
             // 4. Sección Próximamente
@@ -227,23 +225,28 @@ private fun HomeScreen(
                 SectionHeader(title = "Próximamente", hasAction = true)
             }
 
-            // Lista de eventos próximos (ejemplo)
-            items(2) {
+            // Lista de eventos próximos
+            items(state.proximamenteItems) { item ->
                 ProximamenteCard(
-                    onEvent = onEvent,
-                    "Festival de las Flores",
-                    "NOV",
-                    1,
-                    "Antigua Guatemala",
-                    0,
-                    R.drawable.festival)
+                    onEvent = { onEventClick(item.id) },
+                    titulo = item.titulo,
+                    fecha = item.fecha,
+                    dia = item.dia,
+                    ubicacion = item.ubicacion,
+                    cantidadAmigos = item.cantidadAmigos,
+                    imageResId = item.imageResId
+                )
             }
         }
     }
 }
 
 @Composable
-fun SearchBarSection(text: String = "Busca eventos, lugares u artistas") {
+fun SearchBarSection(
+    query: String = "",
+    onQueryChange: (String) -> Unit = {},
+    text: String = "Busca eventos, lugares u artistas"
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -266,10 +269,28 @@ fun SearchBarSection(text: String = "Busca eventos, lugares u artistas") {
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            androidx.compose.foundation.text.BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                },
                 modifier = Modifier.weight(1f)
             )
             Icon(
@@ -284,6 +305,7 @@ fun SearchBarSection(text: String = "Busca eventos, lugares u artistas") {
 @Composable
 fun CategoryFilters(
     categories: List<String>,
+    selectedCategory: String,
     onCategorySelected: (String) -> Unit
 ) {
     LazyRow(
@@ -293,7 +315,7 @@ fun CategoryFilters(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(categories) { category ->
-            val isSelected = category == "Todos"
+            val isSelected = category == selectedCategory
             Button(
                 onClick = { onCategorySelected(category) },
                 colors = ButtonDefaults.buttonColors(
@@ -334,14 +356,6 @@ fun SectionHeader(title: String, hasAction: Boolean = false) {
         }
     }
 }
-
-data class ProximamenteItem(
-    val title: String,
-    val fecha: String,
-    val dia: Int,
-    val ubicacion: String,
-    val imageResId: Int
-)
 
 @Composable
 fun ProximamenteCard(

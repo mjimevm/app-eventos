@@ -80,8 +80,8 @@ fun NavigationHost(
                 onSearchClick = onSearch,
                 onCreateClick = onCreate,
                 onProfileClick = onProfile,
-                onEvent = {
-                    navController.navigateToEventInfo()
+                onEvent = { eventId ->
+                    navController.navigateToEventInfo(eventId)
                 }
             )
             searchScreen(
@@ -89,8 +89,8 @@ fun NavigationHost(
                 onSearchClick = {},
                 onCreateClick = onCreate,
                 onProfileClick = onProfile,
-                onEvent = {
-                    navController.navigateToEventInfo()
+                onEvent = { eventId ->
+                    navController.navigateToEventInfo(eventId)
                 }
             )
             createEventScreen(

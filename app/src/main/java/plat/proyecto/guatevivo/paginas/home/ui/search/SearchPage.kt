@@ -5,6 +5,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,12 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import kotlinx.serialization.Serializable
-import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteCard
@@ -38,7 +39,7 @@ fun NavGraphBuilder.searchScreen(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: (Int) -> Unit
 ) {
     composable<SearchDestination> {
         SearchRoute(
@@ -57,14 +58,19 @@ fun SearchRoute(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: (Int) -> Unit,
+    viewModel: SearchViewModel = viewModel()
 ) {
+    val state by viewModel.state.collectAsState()
+
     SearchPage(
+        state = state,
+        onEvent = viewModel::onEvent,
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
         onProfileClick = onProfileClick,
-        onEvent = onEvent
+        onEventClick = onEvent
     )
 }
 
@@ -72,20 +78,14 @@ fun SearchRoute(
 @Composable
 private fun SearchPage(
     modifier: Modifier = Modifier,
+    state: SearchState = SearchState(),
+    onEvent: (SearchEvent) -> Unit = {},
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onEvent: () -> Unit = {}
+    onEventClick: (Int) -> Unit = {}
 ) {
-    var selectedCategory by remember { mutableStateOf("Populares") }
-
-    val categories = listOf(
-        "Populares", "Conciertos", "Gastronomía",
-        "Cultura", "Arte", "Danza",
-        "Exhibiciones", "Religión", "Política"
-    )
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -120,12 +120,16 @@ private fun SearchPage(
                     modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
                 )
             }
-            // 1. Barra de Búsqueda (mismo componente del Home)
+            // 1. Barra de Búsqueda
             item {
-                SearchBarSection(text = "Busca eventos, lugares u artistas")
+                SearchBarSection(
+                    query = state.searchQuery,
+                    onQueryChange = { query -> onEvent(SearchEvent.UpdateQuery(query)) },
+                    text = "Busca eventos, lugares u artistas"
+                )
             }
 
-            // 2. Filtros de Categorías adaptados a la longitud de la palabra (FlowRow)
+            // 2. Filtros de Categorías adaptados (FlowRow)
             item {
                 FlowRow(
                     modifier = Modifier
@@ -134,13 +138,13 @@ private fun SearchPage(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    categories.forEach { category ->
-                        val isSelected = category == selectedCategory
+                    state.categories.forEach { category ->
+                        val isSelected = category == state.selectedCategory
                         Surface(
                             shape = RoundedCornerShape(4.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                             border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
-                            onClick = { selectedCategory = category },
+                            onClick = { onEvent(SearchEvent.SelectCategory(category)) },
                         ) {
                             Box(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -158,37 +162,28 @@ private fun SearchPage(
                 }
             }
 
-            // 3. Sección Sugeridos (mismo componente del Home)
+            // 3. Sección Sugeridos o Resultados
             item {
-                SectionHeader(title = "Sugeridos", hasAction = true)
+                val headerTitle = if (state.searchQuery.isBlank()) "Sugeridos" else "Resultados para \"${state.searchQuery}\""
+                SectionHeader(title = headerTitle, hasAction = state.searchQuery.isBlank())
             }
 
-            // 4. Tarjetas Próximamente (mismo componente ProximamenteCard del Home)
-            item {
+            // 4. Tarjetas Próximamente / Resultados
+            items(state.searchResults) { item ->
                 ProximamenteCard(
-                    titulo = "Festival de Barriletes Gigantes",
-                    fecha = "NOV",
-                    dia = 1,
-                    ubicacion = "Sumpango, Sacatepéquez",
-                    cantidadAmigos = 2,
-                    imageResId = R.drawable.festival,
-                    onEvent = onEvent
-                )
-            }
-            item {
-                ProximamenteCard(
-                    titulo = "Cena de Café en Atitlán",
-                    fecha = "SEP",
-                    dia = 23,
-                    ubicacion = "Panajachel, Atitlán",
-                    cantidadAmigos = 2,
-                    imageResId = R.drawable.panajachel,
-                    onEvent = onEvent
+                    titulo = item.titulo,
+                    fecha = item.fecha,
+                    dia = item.dia,
+                    ubicacion = item.ubicacion,
+                    cantidadAmigos = item.cantidadAmigos,
+                    imageResId = item.imageResId,
+                    onEvent = { onEventClick(item.id) }
                 )
             }
         }
     }
 }
+
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
