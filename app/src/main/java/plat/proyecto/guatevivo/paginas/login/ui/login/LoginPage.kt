@@ -5,35 +5,22 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedSecureTextField
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -58,26 +45,36 @@ fun NavGraphBuilder.loginScreen(
         LoginRoute(onIniciarSesion = onIniciarSesion, onCrearCuenta = onCrearCuenta)
     }
 }
+
 @Composable
 fun LoginRoute(
     onIniciarSesion: () -> Unit,
     onCrearCuenta: () -> Unit,
+    viewModel: LoginViewModel = viewModel(),
 ) {
-    Login(onIniciarSesion = onIniciarSesion, onCrearCuenta = onCrearCuenta)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isLoginSuccessful) {
+        if (state.isLoginSuccessful) {
+            onIniciarSesion()
+        }
+    }
+
+    Login(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onCrearCuenta = onCrearCuenta,
+    )
 }
 
 @Composable
 private fun Login(
     modifier: Modifier = Modifier,
-    onIniciarSesion: () -> Unit = {},
+    state: LoginState = LoginState(),
+    onEvent: (LoginEvent) -> Unit = {},
     onCrearCuenta: () -> Unit = {},
     onForgotPassword: () -> Unit = {},
-    errorMessage: String? = null,
-    isError: Boolean = false,
 ) {
-    val emailState = rememberTextFieldState()
-    val passwordState = rememberTextFieldState()
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -85,7 +82,7 @@ private fun Login(
             .background(MaterialTheme.colorScheme.surface)
             .padding(24.dp),
         verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.Start
+        horizontalAlignment = Alignment.Start,
     ) {
         TopBarCenter()
 
@@ -95,14 +92,14 @@ private fun Login(
             text = "Iniciar Sesión",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Text(
             text = "Ingresa tus datos para continuar en Guatevivo",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = 4.dp),
         )
 
         HorizontalDivider(
@@ -110,89 +107,103 @@ private fun Login(
                 .fillMaxWidth()
                 .padding(top = 16.dp, bottom = 16.dp),
             thickness = 3.dp,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
 
-        if (!errorMessage.isNullOrEmpty()) {
+        if (state.errorMessage != null) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(4.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
                 ),
-                border = BorderStroke(1.dp,MaterialTheme.colorScheme.error)
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
                 ) {
                     Text(
                         text = "Atención",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = errorMessage,
+                        text = state.errorMessage,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
             }
         }
 
         OutlinedTextField(
+            value = state.email,
+            onValueChange = { onEvent(LoginEvent.OnEmailChanged(it)) },
             modifier = Modifier.fillMaxWidth(),
-            state = emailState,
             shape = RoundedCornerShape(4.dp),
-            isError = isError,
+            isError = state.errorMessage != null,
             label = { Text("Correo Electrónico") },
+            singleLine = true,
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.account_circle),
                     contentDescription = null,
-                    tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    tint = if (state.errorMessage != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
-            }
+            },
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedSecureTextField(
+        OutlinedTextField(
+            value = state.password,
+            onValueChange = { onEvent(LoginEvent.OnPasswordChanged(it)) },
             modifier = Modifier.fillMaxWidth(),
-            state = passwordState,
             shape = RoundedCornerShape(4.dp),
-            isError = isError,
+            isError = state.errorMessage != null,
             label = { Text("Contraseña") },
+            singleLine = true,
+            visualTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.lock_icon),
                     contentDescription = null,
-                    tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    tint = if (state.errorMessage != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
-            }
+            },
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = onIniciarSesion,
+            onClick = { onEvent(LoginEvent.OnLoginClicked) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            shape = RoundedCornerShape(4.dp)
+            shape = RoundedCornerShape(4.dp),
+            enabled = !state.isLoading,
         ) {
-            Text(
-                text = "Iniciar Sesión",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Text(
+                    text = "Iniciar Sesión",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -200,38 +211,38 @@ private fun Login(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "¿No tienes una cuenta? ",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = "Crear cuenta",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onCrearCuenta() }
+                modifier = Modifier.clickable { onCrearCuenta() },
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "¿Has olvidado tu contraseña? ",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = "Presiona aquí",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onForgotPassword() }
+                modifier = Modifier.clickable { onForgotPassword() },
             )
         }
     }
@@ -242,20 +253,6 @@ private fun Login(
 @Composable
 fun LoginPreview() {
     GuatevivoTheme {
-        Login(onCrearCuenta = {}, onIniciarSesion = {})
-    }
-}
-
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO, name = "Login Error Light")
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES, name = "Login Error Dark")
-@Composable
-fun LoginErrorPreview() {
-    GuatevivoTheme {
-        Login(
-            onCrearCuenta = {},
-            onIniciarSesion = {},
-            isError = true,
-            errorMessage = "Correo electrónico o contraseña incorrectos. Por favor, verifica tus datos."
-        )
+        Login(onCrearCuenta = {})
     }
 }

@@ -1,4 +1,5 @@
 package plat.proyecto.guatevivo.paginas.login.ui.onboarding
 
-class OnboardingState {
-}
+data class OnboardingState(
+    val isFinished: Boolean = false
+)
