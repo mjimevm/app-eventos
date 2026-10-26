@@ -51,3 +51,7 @@ secret.properties
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Permitir APK de entrega
+!/APK/
+!/APK/*.apk
