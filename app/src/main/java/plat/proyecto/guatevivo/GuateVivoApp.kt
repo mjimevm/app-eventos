@@ -1,0 +1,66 @@
+package plat.proyecto.guatevivo
+
+import android.app.Application
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import plat.proyecto.guatevivo.core.firebase.funciones.amigos.firebase.FriendsFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.amigos.firebase.FriendsFirebaseImpl
+import plat.proyecto.guatevivo.core.firebase.funciones.asistencia.firebase.AttendanceFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.asistencia.firebase.AttendanceFirebaseImpl
+import plat.proyecto.guatevivo.core.firebase.funciones.auth.AuthFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.auth.AuthFirebaseImpl
+import plat.proyecto.guatevivo.core.firebase.funciones.event.firebase.EventFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.event.firebase.EventFirebaseImpl
+import plat.proyecto.guatevivo.core.firebase.funciones.storage.StorageFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.storage.StorageFirebaseImpl
+import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebaseImpl
+
+class GuateVivoApp : Application() {
+    val firebaseAuth: FirebaseAuth by lazy {
+        FirebaseAuth.getInstance()
+    }
+    val firestore: FirebaseFirestore by lazy {
+        FirebaseFirestore.getInstance()
+    }
+    val firebaseStorage: FirebaseStorage by lazy {
+        FirebaseStorage.getInstance()
+    }
+    val authFirebase: AuthFirebase by lazy {
+        AuthFirebaseImpl(
+            firebaseAuth
+        )
+    }
+    val userFirebase: UserFirebase by lazy {
+        UserFirebaseImpl(
+            firestore,
+            firebaseAuth
+        )
+    }
+    val eventFirebase: EventFirebase by lazy {
+        EventFirebaseImpl(
+            firestore,
+            firebaseAuth
+        )
+    }
+    val storageFirebase: StorageFirebase by lazy {
+        StorageFirebaseImpl(
+            firebaseStorage,
+            firebaseAuth
+        )
+    }
+    val attendanceFirebase: AttendanceFirebase by lazy {
+        AttendanceFirebaseImpl(
+            firestore,
+            firebaseAuth
+        )
+    }
+    val friendsFirebase: FriendsFirebase by lazy {
+        FriendsFirebaseImpl(
+            firestore,
+            firebaseAuth
+        )
+    }
+
+}
