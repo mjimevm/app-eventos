@@ -55,3 +55,6 @@ captures/
 # Permitir APK de entrega
 !/APK/
 !/APK/*.apk
+
+# Firebase
+app/google-services.json
