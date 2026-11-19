@@ -23,11 +23,14 @@ import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.TopBar
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import kotlinx.serialization.Serializable
+import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Serializable
 data object RegisterBusinessDestination
@@ -46,10 +49,23 @@ fun NavGraphBuilder.registerBusinessScreen(onCreate: () -> Unit,
 }
 
 @Composable
-fun CreateBusinessRoute(onCreate: () -> Unit,
-                        onBack: () -> Unit) {
+fun CreateBusinessRoute(
+    onCreate: () -> Unit,
+    onBack: () -> Unit,
+    viewModel: RegisterBusinessViewModel = viewModel(factory = RegisterBusinessViewModel.Factory)
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isSuccess) {
+        if (state.isSuccess) {
+            onCreate()
+        }
+    }
+
     CreateBussinesAccount(
-        onCreate = onCreate,
+        state = state,
+        onEvent = viewModel::onEvent,
+        onCreate = { viewModel.onEvent(RegisterBusinessEvent.OnRegisterClicked) },
         onBack = onBack
     )
 }
@@ -58,6 +74,8 @@ fun CreateBusinessRoute(onCreate: () -> Unit,
 @Composable
 private fun CreateBussinesAccount(
     modifier: Modifier = Modifier,
+    state: RegisterBusinessState = RegisterBusinessState(),
+    onEvent: (RegisterBusinessEvent) -> Unit = {},
     onCreate: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
@@ -108,6 +126,32 @@ private fun CreateBussinesAccount(
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                if (state.errorMessage != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Atención",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = state.errorMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -206,7 +250,18 @@ private fun CreateBussinesAccount(
             }
 
             Button(
-                onClick = onCreate,
+                onClick = {
+                    onEvent(RegisterBusinessEvent.OnEmpresaChanged(nombreEmpresaState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnCorreoChanged(emailEmpresarialState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnTelefonoChanged(telefonoState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnDireccionChanged(direccionState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnDescripcionChanged(descripcionState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnPasswordChanged(passwordState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnConfirmPasswordChanged(confirmPasswordState.text.toString()))
+                    onEvent(RegisterBusinessEvent.OnAceptoTerminosChanged(aceptoTerminos))
+                    onEvent(RegisterBusinessEvent.OnRepresentanteChanged(esRepresentante))
+                    onCreate()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
@@ -214,15 +269,24 @@ private fun CreateBussinesAccount(
                 shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
-                )
+                ),
+                enabled = !state.isLoading
             ) {
-                Text(
-                    text = "Crear Cuenta Empresarial",
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Crear Cuenta Empresarial",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }
@@ -291,7 +355,7 @@ private fun InputField(
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun CreateBussinesAccountPreview() {
-    plat.proyecto.guatevivo.ui.theme.GuatevivoTheme {
+    GuatevivoTheme {
         CreateBussinesAccount()
     }
 }

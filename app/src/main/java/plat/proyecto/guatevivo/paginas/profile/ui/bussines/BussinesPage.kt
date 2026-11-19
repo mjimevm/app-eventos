@@ -37,6 +37,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -85,9 +87,19 @@ fun BusinessAccountRoute(
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
     onAjustes: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: () -> Unit,
+    viewModel: BusinessViewModel = viewModel(factory = BusinessViewModel.Factory)
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     BussinesAccountPage(
+        usuario = state.empresaNombre,
+        correo = "",
+        imagenPerfil = null,
+        numero = "",
+        ubicacion = "",
+        listaCreados = emptyList(),
+        listaPublicados = emptyList(),
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
@@ -197,11 +209,13 @@ private fun BussinesAccountPage(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = correo,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (correo.isNotEmpty()) {
+                    Text(
+                        text = correo,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 if (numero.isNotEmpty() || ubicacion.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(

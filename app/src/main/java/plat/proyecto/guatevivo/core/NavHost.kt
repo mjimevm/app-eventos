@@ -4,12 +4,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.navOptions
+import plat.proyecto.guatevivo.GuateVivoApp
+import plat.proyecto.guatevivo.core.firebase.funciones.user.model.AccountType
 import plat.proyecto.guatevivo.paginas.event.ui.create.createEventScreen
 import plat.proyecto.guatevivo.paginas.event.ui.create.navigateToCreateEvent
 import plat.proyecto.guatevivo.paginas.event.ui.info.eventInfoScreen
@@ -28,6 +35,19 @@ import plat.proyecto.guatevivo.paginas.profile.profileNestNav
 fun NavigationHost(
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val app = context.applicationContext as GuateVivoApp
+    val isLoggedIn = remember { app.authRepository.isLoggedIn() }
+    var isBusiness by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val uid = app.authRepository.getCurrentUserId()
+        if (uid != null) {
+            val user = app.userRepository.getUser(uid)
+            isBusiness = user?.accountType == AccountType.BUSINESS.name
+        }
+    }
+
     val navController = rememberNavController()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -64,7 +84,7 @@ fun NavigationHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AuthNavHost,
+            startDestination = if (isLoggedIn) HomeDestination else AuthNavHost,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -72,7 +92,7 @@ fun NavigationHost(
             AuthNestNav(navController)
             profileNestNav(
                 navController,
-                isAccountBusiness = false, //TODO cambiar a variable segun el tipo de usuario
+                isAccountBusiness = isBusiness,
                 bottomBarOptions = bottomBarOptions
             )
             homeScreen(

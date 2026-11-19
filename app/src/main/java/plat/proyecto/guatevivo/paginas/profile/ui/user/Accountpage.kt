@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -87,9 +89,18 @@ fun UserAccountRoute(
     onProfileClick: () -> Unit,
     onAjustes: () -> Unit,
     onAmistades: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: () -> Unit,
+    viewModel: AccountViewModel = viewModel(factory = AccountViewModel.Factory)
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     AccountPage(
+        usuario = state.usuario,
+        correo = state.correo,
+        imagenPerfil = null,
+        listaAsistidos = emptyList(),
+        listaCreados = emptyList(),
+        listaCompartidos = emptyList(),
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,

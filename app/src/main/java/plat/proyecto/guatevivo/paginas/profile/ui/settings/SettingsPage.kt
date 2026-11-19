@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -78,11 +80,21 @@ fun SettingsRoute(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     SettingsPage(
+        darkModeEnabled = state.darkMode,
+        onDarkModeChanged = { enabled ->
+            viewModel.onEvent(SettingsEvent.OnDarkModeToggled(enabled))
+        },
         onBackClick = onBackClick,
-        onLogoutClick = onLogoutClick,
+        onLogoutClick = {
+            viewModel.logout()
+            onLogoutClick()
+        },
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
@@ -103,10 +115,9 @@ private fun SettingsPage(
     onAboutClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
+    darkModeEnabled: Boolean = false,
     onDarkModeChanged: (Boolean) -> Unit = {},
 ) {
-    var darkModeEnabled by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopBar(true, onBackClick = onBackClick)
@@ -151,10 +162,7 @@ private fun SettingsPage(
                     title = "Modo oscuro",
                     subtitle = "Cambiar entre tema claro y oscuro",
                     checked = darkModeEnabled,
-                    onCheckedChange = {
-                        darkModeEnabled = it
-                        onDarkModeChanged(it)
-                    },
+                    onCheckedChange = onDarkModeChanged,
                 )
             }
 

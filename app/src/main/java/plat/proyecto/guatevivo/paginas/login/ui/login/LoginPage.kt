@@ -50,7 +50,7 @@ fun NavGraphBuilder.loginScreen(
 fun LoginRoute(
     onIniciarSesion: () -> Unit,
     onCrearCuenta: () -> Unit,
-    viewModel: LoginViewModel = viewModel(),
+    viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -64,6 +64,7 @@ fun LoginRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onCrearCuenta = onCrearCuenta,
+        onForgotPassword = { viewModel.onEvent(LoginEvent.OnForgotPasswordClicked) }
     )
 }
 
@@ -137,6 +138,38 @@ private fun Login(
                         text = state.errorMessage,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+
+        if (state.successMessage != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                ) {
+                    Text(
+                        text = "Información",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = state.successMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }

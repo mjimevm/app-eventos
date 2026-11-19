@@ -16,6 +16,9 @@ import plat.proyecto.guatevivo.core.firebase.funciones.storage.StorageFirebase
 import plat.proyecto.guatevivo.core.firebase.funciones.storage.StorageFirebaseImpl
 import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebase
 import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebaseImpl
+import plat.proyecto.guatevivo.core.datastore.PreferencesRepository
+import plat.proyecto.guatevivo.core.repository.AuthRepository
+import plat.proyecto.guatevivo.core.repository.UserRepository
 
 class GuateVivoApp : Application() {
     val firebaseAuth: FirebaseAuth by lazy {
@@ -61,6 +64,18 @@ class GuateVivoApp : Application() {
             firestore,
             firebaseAuth
         )
+    }
+
+    val authRepository: AuthRepository by lazy {
+        AuthRepository(authFirebase, userFirebase)
+    }
+
+    val userRepository: UserRepository by lazy {
+        UserRepository(userFirebase)
+    }
+
+    val preferencesRepository: PreferencesRepository by lazy {
+        PreferencesRepository(applicationContext)
     }
 
 }

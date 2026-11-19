@@ -26,6 +26,8 @@ import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.TopBar
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
@@ -55,17 +57,31 @@ fun NavGraphBuilder.registerUserScreen(
 @Composable
 fun RegisterUserRoute(
     onCreate: () -> Unit,
-    onBack: () -> Unit
-    ) {
+    onBack: () -> Unit,
+    viewModel: RegisterUserViewModel = viewModel(factory = RegisterUserViewModel.Factory)
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isSuccess) {
+        if (state.isSuccess) {
+            onCreate()
+        }
+    }
+
     CreateNormalAccount(
-        onCreate = onCreate,
+        state = state,
+        onEvent = viewModel::onEvent,
+        onCreate = { viewModel.onEvent(RegisterUserEvent.OnRegisterClicked) },
         onBack = onBack
     )
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateNormalAccount(
     modifier: Modifier = Modifier,
+    state: RegisterUserState = RegisterUserState(),
+    onEvent: (RegisterUserEvent) -> Unit = {},
     onCreate: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
@@ -113,6 +129,32 @@ private fun CreateNormalAccount(
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                if (state.errorMessage != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Atención",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = state.errorMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -214,7 +256,15 @@ private fun CreateNormalAccount(
             }
 
             Button(
-                onClick = onCreate,
+                onClick = {
+                    onEvent(RegisterUserEvent.OnNombreChanged(nombreState.text.toString()))
+                    onEvent(RegisterUserEvent.OnApellidoChanged(apellidoState.text.toString()))
+                    onEvent(RegisterUserEvent.OnCorreoChanged(emailState.text.toString()))
+                    onEvent(RegisterUserEvent.OnPasswordChanged(passwordState.text.toString()))
+                    onEvent(RegisterUserEvent.OnConfirmPasswordChanged(confirmPasswordState.text.toString()))
+                    onEvent(RegisterUserEvent.OnAceptoTerminosChanged(aceptoTerminos))
+                    onCreate()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
@@ -222,15 +272,24 @@ private fun CreateNormalAccount(
                 shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
-                )
+                ),
+                enabled = !state.isLoading
             ) {
-                Text(
-                    text = "Crear Cuenta",
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Crear Cuenta",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
     }
@@ -300,6 +359,6 @@ private fun InputField(
 @Composable
 fun CreateNormalAccountPreview() {
     GuatevivoTheme {
-        CreateNormalAccount(onCreate = {})
+        CreateNormalAccount()
     }
 }
