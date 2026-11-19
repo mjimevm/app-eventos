@@ -10,10 +10,8 @@ import plat.proyecto.guatevivo.core.firebase.funciones.user.model.UserDto
 
 class FriendsFirebaseImpl(
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth,
-    endpoint: () -> String
+    private val auth: FirebaseAuth
 ) : FriendsFirebase {
-    private val emailClient = EmailFriendRequestClient(auth, endpoint)
     private val users get() = firestore.collection(FirebaseCollections.USERS)
     private val profiles get() = firestore.collection(FirebaseCollections.PUBLIC_PROFILES)
     private val requests get() = firestore.collection(FirebaseCollections.FRIEND_REQUESTS)
@@ -68,9 +66,73 @@ class FriendsFirebaseImpl(
         return result.distinctBy { it.id }
     }
 
-    override suspend fun sendFriendRequest(email: String): EmailFriendRequestOutcome {
-        currentUid()
-        return emailClient.send(email)
+    override suspend fun sendFriendRequest(
+        email: String
+    ): EmailFriendRequestOutcome {
+
+        val uid = currentUid()
+        val normalizedEmail = normalizeFriendEmail(email)
+
+        require(isValidFriendEmail(normalizedEmail)) {
+            "Introduce un correo electrónico válido"
+        }
+
+        val receiverDocument = users
+            .whereEqualTo("email", normalizedEmail)
+            .limit(1)
+            .get(Source.SERVER)
+            .await()
+            .documents
+            .firstOrNull()
+            ?: throw IllegalArgumentException(
+                "No existe una cuenta con ese correo"
+            )
+
+        val receiverUid = receiverDocument.id
+
+        require(receiverUid != uid) {
+            "No puedes enviarte una solicitud a ti mismo"
+        }
+
+        val forwardRef = requests.document(
+            friendRequestId(uid, receiverUid)
+        )
+
+        val reverseRef = requests.document(
+            friendRequestId(receiverUid, uid)
+        )
+
+        val forward = forwardRef
+            .get(Source.SERVER)
+            .await()
+            .toObject(FriendRequestDto::class.java)
+
+        val reverse = reverseRef
+            .get(Source.SERVER)
+            .await()
+            .toObject(FriendRequestDto::class.java)
+
+        val existing = forward ?: reverse
+
+        if (existing != null) {
+            when (existing.status) {
+                "ACCEPTED" -> return EmailFriendRequestOutcome.FRIENDS
+                "PENDING" -> return EmailFriendRequestOutcome.PENDING
+            }
+        }
+
+        forwardRef.set(
+            mapOf(
+                "id" to forwardRef.id,
+                "senderUid" to uid,
+                "receiverUid" to receiverUid,
+                "status" to "PENDING",
+                "createdAt" to System.currentTimeMillis(),
+                "updatedAt" to System.currentTimeMillis()
+            )
+        ).await()
+
+        return EmailFriendRequestOutcome.SENT
     }
 
     override suspend fun acceptFriendRequest(requestId: String) = respond(requestId, "ACCEPTED")

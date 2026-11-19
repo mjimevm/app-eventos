@@ -66,9 +66,8 @@ class GuateVivoApp : Application() {
     }
     val friendsFirebase: FriendsFirebase by lazy {
         FriendsFirebaseImpl(
-            firestore,
-            firebaseAuth,
-            { getString(R.string.friend_requests_endpoint) }
+            firestore = firestore,
+            auth = firebaseAuth
         )
     }
 
