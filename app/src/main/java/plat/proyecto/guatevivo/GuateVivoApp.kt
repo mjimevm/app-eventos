@@ -4,6 +4,7 @@ import android.app.Application
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import plat.proyecto.guatevivo.core.EventosDb
 import plat.proyecto.guatevivo.core.firebase.funciones.amigos.firebase.FriendsFirebase
 import plat.proyecto.guatevivo.core.firebase.funciones.amigos.firebase.FriendsFirebaseImpl
 import plat.proyecto.guatevivo.core.firebase.funciones.asistencia.firebase.AttendanceFirebase
@@ -18,6 +19,8 @@ import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebas
 import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebaseImpl
 import plat.proyecto.guatevivo.core.datastore.PreferencesRepository
 import plat.proyecto.guatevivo.core.repository.AuthRepository
+import plat.proyecto.guatevivo.core.repository.EventRepository
+import plat.proyecto.guatevivo.core.repository.EventRepositoryImpl
 import plat.proyecto.guatevivo.core.repository.UserRepository
 
 class GuateVivoApp : Application() {
@@ -66,12 +69,20 @@ class GuateVivoApp : Application() {
         )
     }
 
+    val database: EventosDb by lazy {
+        EventosDb.getInstance(applicationContext)
+    }
+
     val authRepository: AuthRepository by lazy {
         AuthRepository(authFirebase, userFirebase)
     }
 
     val userRepository: UserRepository by lazy {
         UserRepository(userFirebase)
+    }
+
+    val eventRepository: EventRepository by lazy {
+        EventRepositoryImpl(eventFirebase, database.eventDao())
     }
 
     val preferencesRepository: PreferencesRepository by lazy {

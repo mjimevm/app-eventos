@@ -1,6 +1,6 @@
 package plat.proyecto.guatevivo.paginas.home.ui.search
 
-import plat.proyecto.guatevivo.core.EventosDb
+import plat.proyecto.guatevivo.core.EventosMockData
 import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteItem
 
 data class SearchState(
@@ -11,7 +11,7 @@ data class SearchState(
         "Cultura", "Arte", "Danza",
         "Exhibiciones", "Religión", "Política"
     ),
-    val allEvents: List<ProximamenteItem> = EventosDb.proximamenteItems,
+    val allEvents: List<ProximamenteItem> = EventosMockData.proximamenteItems,
     val isLoading: Boolean = false
 ) {
     val searchResults: List<ProximamenteItem>

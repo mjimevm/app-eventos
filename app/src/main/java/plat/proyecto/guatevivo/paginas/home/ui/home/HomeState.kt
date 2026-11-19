@@ -1,7 +1,7 @@
 package plat.proyecto.guatevivo.paginas.home.ui.home
 
 import androidx.annotation.DrawableRes
-import plat.proyecto.guatevivo.core.EventosDb
+import plat.proyecto.guatevivo.core.EventosMockData
 
 data class CarouselItem(
     val id: Int,
@@ -25,7 +25,7 @@ data class ProximamenteItem(
 data class HomeState(
     val selectedCategory: String = "Todos",
     val categories: List<String> = listOf("Todos", "Conciertos", "Cultura", "Gastronomía", "Moda"),
-    val destacadosItems: List<CarouselItem> = EventosDb.destacadosList,
-    val proximamenteItems: List<ProximamenteItem> = EventosDb.proximamenteItems,
+    val destacadosItems: List<CarouselItem> = EventosMockData.destacadosList,
+    val proximamenteItems: List<ProximamenteItem> = EventosMockData.proximamenteItems,
     val isLoading: Boolean = false
 )

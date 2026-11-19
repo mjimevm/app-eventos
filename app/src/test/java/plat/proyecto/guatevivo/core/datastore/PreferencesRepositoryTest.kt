@@ -6,7 +6,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -25,7 +26,7 @@ class PreferencesRepositoryTest {
         val testFile = tmpFolder.root.resolve("test_preferences.preferences_pb")
         val testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { testFile }
+            produceFile = { testFile },
         )
         val repository = PreferencesRepository(testDataStore)
 
@@ -38,11 +39,11 @@ class PreferencesRepositoryTest {
         val testFile = tmpFolder.root.resolve("test_preferences_onboarding.preferences_pb")
         val testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { testFile }
+            produceFile = { testFile },
         )
         val repository = PreferencesRepository(testDataStore)
 
-        repository.setOnboardingCompleted(true)
+        repository.setOnboardingCompleted(completed = true)
         val completed = repository.onboardingCompletedFlow.first()
         assertTrue(completed)
     }
@@ -52,7 +53,7 @@ class PreferencesRepositoryTest {
         val testFile = tmpFolder.root.resolve("test_preferences_dark.preferences_pb")
         val testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { testFile }
+            produceFile = { testFile },
         )
         val repository = PreferencesRepository(testDataStore)
 
@@ -65,11 +66,11 @@ class PreferencesRepositoryTest {
         val testFile = tmpFolder.root.resolve("test_preferences_dark_save.preferences_pb")
         val testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { testFile }
+            produceFile = { testFile },
         )
         val repository = PreferencesRepository(testDataStore)
 
-        repository.setDarkMode(true)
+        repository.setDarkMode(enabled = true)
         val darkMode = repository.darkModeFlow.first()
         assertTrue(darkMode)
     }

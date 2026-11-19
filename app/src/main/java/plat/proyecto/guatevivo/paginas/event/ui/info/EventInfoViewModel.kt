@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import plat.proyecto.guatevivo.core.EventosDb
+import plat.proyecto.guatevivo.core.EventosMockData
 
 class EventInfoViewModel(
     savedStateHandle: SavedStateHandle
@@ -19,7 +19,7 @@ class EventInfoViewModel(
     private val destination = savedStateHandle.toRoute<EventInfoDestination>()
 
     private val _state = MutableStateFlow(
-        EventosDb.getEventInfoState(destination.eventId)
+        EventosMockData.getEventInfoState(destination.eventId)
     )
     val state: StateFlow<EventInfoState> = _state.asStateFlow()
 
