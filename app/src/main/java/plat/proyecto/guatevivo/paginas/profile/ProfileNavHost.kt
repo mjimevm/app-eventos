@@ -85,7 +85,6 @@ fun NavGraphBuilder.profileNestNav(
             }
         }
         businessAccountScreen(
-            onAmistades = { navController.navigateToFriends() },
             onHomeClick = {
                 navController.navigateToHome(bottomBarOptions)
             },

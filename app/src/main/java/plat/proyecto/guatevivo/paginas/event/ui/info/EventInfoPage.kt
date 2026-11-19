@@ -339,7 +339,7 @@ private fun EventoInfoPage(
                             AmigosStack(state.amigosAsistiran)
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "${state.amigosAsistiran.size + 2} Amigos asistirán",
+                                text = "${state.totalAttendees} asistentes · ${state.attendingFriendsCount} amigos asistirán",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -366,7 +366,7 @@ private fun EventoInfoPage(
 
             if (state.canAttend) Button(
                 onClick = { onEvent(EventInfoEvent.ToggleAttend) },
-                enabled = !state.isLoading,
+                enabled = !state.isLoading && !state.isAttendanceLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 24.dp, bottom = 12.dp, top = 8.dp)
@@ -376,14 +376,14 @@ private fun EventoInfoPage(
                     containerColor = if (state.isAttending) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                 )
             ) {
-                if (state.isLoading) {
+                if (state.isAttendanceLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.surface
                     )
                 } else {
                     Text(
-                        text = if (state.isAttending) "¡Asistiendo! (Cancelar)" else "Asistir",
+                        text = if (state.isAttending) "Cancelar asistencia" else "Confirmar asistencia",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary

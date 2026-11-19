@@ -25,7 +25,23 @@ class FriendsViewModelTest {
         store.emails["ana@test.com"] = "ana"
         store.emails["beto@test.com"] = "beto"
     }
-    private fun viewModel(fake: FakeFriendsFirebase, uid: String? = null) = FriendsViewModel(FriendsRepository(fake) { fake.actor }, uid)
+    private fun viewModel(
+        fake: FakeFriendsFirebase,
+        uid: String? = null,
+        accountType: suspend () -> String? = { "USER" }
+    ) = FriendsViewModel(FriendsRepository(fake, { fake.actor }, accountType), uid)
+
+    @Test fun businessAccountCannotOpenOrSendFriendsFromViewModel() = runTest {
+        val fake = fake()
+        val vm = viewModel(fake, accountType = { "BUSINESS" })
+        advanceUntilIdle()
+        vm.onEvent(FriendsEvent.UpdateEmail("ana@test.com"))
+        vm.onEvent(FriendsEvent.SendRequest)
+        advanceUntilIdle()
+        assertNotNull(vm.state.value.error)
+        assertNull(vm.state.value.sendOutcome)
+        assertTrue(fake.sentEmails.isEmpty())
+    }
 
     @Test fun typingEmailDoesNotQueryOrSendAndInvalidFormatIsRejected() = runTest {
         val fake = fake()

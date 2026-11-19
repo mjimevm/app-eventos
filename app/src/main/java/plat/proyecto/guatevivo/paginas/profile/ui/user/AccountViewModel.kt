@@ -20,12 +20,14 @@ import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventStatus
 import plat.proyecto.guatevivo.core.repository.AuthRepository
 import plat.proyecto.guatevivo.core.repository.EventRepository
 import plat.proyecto.guatevivo.core.repository.UserRepository
+import plat.proyecto.guatevivo.core.repository.AttendanceRepository
 import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteItem
 
 class AccountViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    private val attendanceRepository: AttendanceRepository? = null
 ) : ViewModel() {
 
     companion object {
@@ -34,7 +36,7 @@ class AccountViewModel(
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
                 val app = application as GuateVivoApp
-                return AccountViewModel(app.authRepository, app.userRepository, app.eventRepository) as T
+                return AccountViewModel(app.authRepository, app.userRepository, app.eventRepository, app.attendanceRepository) as T
             }
         }
     }
@@ -54,6 +56,15 @@ class AccountViewModel(
                 val user = userRepository.getUser(uid)
                 val drafts = eventRepository.getMyDrafts()
                 val createdEvents = eventRepository.getMyCreatedEvents()
+                val attendingEvents = attendanceRepository?.getAttendingEventIds()
+                    ?.distinct()
+                    ?.mapNotNull { eventRepository.getEventById(it) }
+                    ?.filter {
+                        it.status == EventStatus.PUBLISHED.name &&
+                            it.incluirConfirmacion
+                    }
+                    ?.distinctBy { it.id }
+                    ?: emptyList()
 
                 val userDrafts = drafts.filter {
                     it.status == EventStatus.DRAFT.name && it.organizadorId == uid
@@ -70,6 +81,7 @@ class AccountViewModel(
                             ?: (authRepository.getCurrentUserEmail() ?: ""),
                         listaCreados = userDrafts.map { dto -> dto.toProximamenteItem() },
                         listaCompartidos = userPublished.map { dto -> dto.toProximamenteItem() },
+                        listaAsistidos = attendingEvents.map { dto -> dto.toProximamenteItem() },
                         isLoading = false
                     )
                 }

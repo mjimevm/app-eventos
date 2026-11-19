@@ -21,11 +21,11 @@ class EmailFriendRequestClient(private val auth: FirebaseAuth, private val endpo
             val connection = uri.toURL().openConnection() as HttpURLConnection
             try {
                 connection.requestMethod = "POST"
-                connection.instanceFollowRedirects = false // Never forward a Firebase token to another endpoint.
+                connection.instanceFollowRedirects = false
                 connection.connectTimeout = 15000
                 connection.readTimeout = 30000
                 connection.doOutput = true
-                connection.setRequestProperty("Authorization", "Bearer $token")
+                connection.setRequestProperty("Authorization", "Bearer " + token)
                 connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 connection.setRequestProperty("Accept", "application/json")
                 val payload = buildJsonObject { put("email", normalizeFriendEmail(email)) }.toString()

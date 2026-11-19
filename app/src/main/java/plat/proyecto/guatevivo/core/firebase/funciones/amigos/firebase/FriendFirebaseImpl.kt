@@ -1,7 +1,6 @@
 package plat.proyecto.guatevivo.core.firebase.funciones.amigos.firebase
 
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
@@ -24,21 +23,29 @@ class FriendsFirebaseImpl(
 
     private suspend fun syncOwnProfile(): PublicProfileDto {
         val uid = currentUid()
-        return firestore.runTransaction { transaction ->
-            val source = transaction.get(users.document(uid))
-            val directory = transaction.get(profiles.document(uid))
-            val user = source.toObject(UserDto::class.java) ?: error("Perfil no encontrado")
-            require(!user.isDeleted) { "Esta cuenta fue eliminada" }
-            val profile = user.copy(uid = uid).publicProfile()
-            val fields = mapOf(
-                "nameNormalized" to profile.nameNormalized, "isDiscoverable" to profile.isDiscoverable,
-                "isDeleted" to false, "photoUrl" to profile.photoUrl
-            )
-            if (fields.any { (key, value) -> source.get(key) != value }) transaction.update(users.document(uid), fields)
-            if (directory.toObject(PublicProfileDto::class.java) != profile || directory.data?.size != 7)
-                transaction.set(profiles.document(uid), profile)
-            profile
-        }.await()
+        val source = users.document(uid).get(Source.SERVER).await()
+        val user = source.toObject(UserDto::class.java)
+            ?: throw IllegalStateException("Perfil no encontrado en users/$uid")
+        require(!user.isDeleted) { "Esta cuenta fue eliminada" }
+        val profile = user.copy(uid = uid).publicProfile()
+
+        val directoryReference = profiles.document(uid)
+        val directory = directoryReference.get(Source.SERVER).await()
+        val existing = directory.toObject(PublicProfileDto::class.java)?.copy(uid = directory.id)
+        if (existing != profile || directory.data?.size != 7) {
+            directoryReference.set(profile).await()
+        }
+
+        val fields = mapOf(
+            "nameNormalized" to profile.nameNormalized,
+            "isDiscoverable" to profile.isDiscoverable,
+            "isDeleted" to false,
+            "photoUrl" to profile.photoUrl
+        )
+        if (fields.any { (key, value) -> source.get(key) != value }) {
+            users.document(uid).update(fields).await()
+        }
+        return profile
     }
 
     override suspend fun getProfile(uid: String): PublicProfileDto? {
@@ -51,15 +58,12 @@ class FriendsFirebaseImpl(
         val uid = currentUid()
         val result = mutableListOf<FriendRequestDto>()
         for (field in listOf("senderUid", "receiverUid")) {
-            val base = requests.whereEqualTo(field, uid).whereIn("status", listOf("PENDING", "ACCEPTED"))
-                .orderBy(FieldPath.documentId()).limit(50)
-            var query = base
-            do {
-                val page = query.get(Source.SERVER).await()
-                result += page.documents.mapNotNull { it.toObject(FriendRequestDto::class.java)?.copy(id = it.id) }
-                val last = page.documents.lastOrNull()
-                if (last != null) query = base.startAfter(last)
-            } while (page.size() == 50)
+            val page = requests.whereEqualTo(field, uid)
+                .whereIn("status", listOf("PENDING", "ACCEPTED"))
+                .limit(50)
+                .get(Source.SERVER)
+                .await()
+            result += page.documents.mapNotNull { it.toObject(FriendRequestDto::class.java)?.copy(id = it.id) }
         }
         return result.distinctBy { it.id }
     }

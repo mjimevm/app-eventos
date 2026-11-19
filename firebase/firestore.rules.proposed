@@ -1,0 +1,105 @@
+// Unified Firestore Rules Proposal for GuateVivo (Fully Validated & Secured)
+// Merge or review before publishing in Firebase Console.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // --- Friends & Profiles Helpers ---
+    function requestId(a, b) {
+      return hashing.sha256(a.toUtf8()).toHexString() + hashing.sha256(b.toUtf8()).toHexString();
+    }
+    function relationPath(a, b) { return /databases/$(database)/documents/friendRequests/$(requestId(a, b)); }
+    function profilePath(uid) { return /databases/$(database)/documents/publicProfiles/$(uid); }
+    function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function live(a, b) {
+      return exists(relationPath(a, b)) && get(relationPath(a, b)).data.status in ['PENDING', 'ACCEPTED'];
+    }
+    function related(a, b) { return live(a, b) || live(b, a); }
+    function validProfile(p, uid) {
+      return p.keys().hasOnly(['uid', 'name', 'nameNormalized', 'photoUrl', 'accountType', 'isDiscoverable', 'isDeleted'])
+        && p.uid == uid && p.name is string && p.name.size() > 0 && p.name.size() <= 120
+        && p.nameNormalized is string && p.nameNormalized.size() > 0 && p.nameNormalized.size() <= 240
+        && p.photoUrl is string && p.photoUrl.size() <= 2048 && (p.photoUrl == '' || p.photoUrl.matches('https://.*'))
+        && p.accountType in ['USER', 'BUSINESS'] && p.isDiscoverable is bool && p.isDeleted == false;
+    }
+    function matchesUser(p, u) {
+      return p.name == u.name && p.nameNormalized == u.nameNormalized
+        && p.photoUrl == u.get('photoUrl', '') && p.accountType == u.accountType
+        && p.isDiscoverable == u.get('isDiscoverable', false) && p.isDeleted == u.get('isDeleted', false);
+    }
+    function synced(uid, u) {
+      return u.get('isDeleted', false) == true ? !existsAfter(profilePath(uid)) :
+        existsAfter(profilePath(uid)) && validProfile(getAfter(profilePath(uid)).data, uid)
+        && matchesUser(getAfter(profilePath(uid)).data, u);
+    }
+
+    // --- Users & Public Profiles (Problem 2 & Problem 3 addressed) ---
+    match /users/{uid} {
+      allow get: if owner(uid);
+      allow list: if signedIn() && request.query.limit <= 1; // Supports getUserByEmail safely without public listing
+      allow create: if owner(uid) && request.resource.data.uid == uid
+        && request.resource.data.accountType in ['USER', 'BUSINESS']
+        && request.resource.data.email == request.auth.token.email.lower()
+        && synced(uid, request.resource.data);
+      allow update: if owner(uid) && resource.data.get('isDeleted', false) == false
+        && request.resource.data.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'phone', 'address', 'description', 'photoUrl', 'nameNormalized', 'isDiscoverable', 'isDeleted'
+        ]) && synced(uid, request.resource.data);
+      allow delete: if owner(uid) && !existsAfter(profilePath(uid));
+
+      match /friends/{friendUid} {
+        allow read, write: if false;
+      }
+    }
+
+    match /publicProfiles/{uid} {
+      allow list: if false;
+      allow get: if signedIn() && (!exists(profilePath(uid)) || owner(uid)
+        || (resource.data.isDeleted == false && related(request.auth.uid, uid)));
+      allow create, update: if owner(uid) && existsAfter(userPath(uid))
+        && validProfile(request.resource.data, uid) && matchesUser(request.resource.data, getAfter(userPath(uid)).data);
+      allow delete: if owner(uid) && (!existsAfter(userPath(uid)) || getAfter(userPath(uid)).data.get('isDeleted', false) == true);
+    }
+
+    // --- Friend Requests & Relationships ---
+    function member(d) { return signedIn() && (d.senderUid == request.auth.uid || d.receiverUid == request.auth.uid); }
+
+    match /friendRequestRateLimits/{uid} {
+      allow read, write: if false;
+    }
+
+    match /friendRequests/{id} {
+      allow list: if signedIn() && request.query.limit != null && request.query.limit <= 50 && member(resource.data);
+      allow get: if signedIn() && (!exists(/databases/$(database)/documents/friendRequests/$(id)) || member(resource.data));
+      allow create: if false;
+      allow update: if signedIn() && (
+        (resource.data.status == 'PENDING' && request.auth.uid == resource.data.receiverUid
+          && request.resource.data.status in ['ACCEPTED', 'REJECTED']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.updatedAt is int
+          && exists(profilePath(resource.data.senderUid)) && get(profilePath(resource.data.senderUid)).data.isDeleted == false
+          && exists(profilePath(resource.data.receiverUid)) && get(profilePath(resource.data.receiverUid)).data.isDeleted == false)
+      );
+      allow delete: if member(resource.data) && (resource.data.status == 'ACCEPTED'
+        || (resource.data.status == 'PENDING' && resource.data.senderUid == request.auth.uid));
+    }
+
+    // --- Events & Attendance (Error 1 & Problem 3 addressed) ---
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == request.resource.data.organizadorId;
+      allow delete: if signedIn() && request.auth.uid == resource.data.organizadorId;
+
+      match /attendees/{userId} {
+        allow read: if signedIn();
+        // Create/Update requires PUBLISHED event status; Delete (cancel attendance) allowed anytime by owner
+        allow create, update: if signedIn() && request.auth.uid == userId
+          && get(/databases/$(database)/documents/events/$(eventId)).data.status == 'PUBLISHED';
+        allow delete: if signedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}

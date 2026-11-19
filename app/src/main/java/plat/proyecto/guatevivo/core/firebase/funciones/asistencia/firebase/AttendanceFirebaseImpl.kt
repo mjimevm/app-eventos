@@ -8,17 +8,19 @@ import plat.proyecto.guatevivo.core.firebase.funciones.asistencia.model.Attendan
 import plat.proyecto.guatevivo.core.firebase.FirebaseCollections
 import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventDto
 import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventStatus
+import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventVisibility
 
 class AttendanceFirebaseImpl(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth
 ) : AttendanceFirebase {
+    companion object {
+        internal fun shouldIncludeAttendingEvent(status: String?, visibility: String?): Boolean =
+            status == EventStatus.PUBLISHED.name && visibility == EventVisibility.PUBLIC.name
+    }
 
     private val events
         get() = firestore.collection(FirebaseCollections.EVENTS)
-
-    private val users
-        get() = firestore.collection(FirebaseCollections.USERS)
 
     private fun currentUid(): String {
         return auth.currentUser?.uid?: throw IllegalStateException("Usuario no autenticado")
@@ -52,6 +54,7 @@ class AttendanceFirebaseImpl(
     }
 
     override suspend fun cancelAttendance(eventId: String) {
+        requirePublishedEvent(eventId)
         val uid = currentUid()
 
         attendees(eventId)
@@ -83,15 +86,25 @@ class AttendanceFirebaseImpl(
         eventId: String
     ): Int {
         val uid = currentUid()
-        val friends = users.document(uid)
-            .collection("friends")
-            .get()
-            .await()
+        val friendUids = mutableSetOf<String>()
+        val requests = firestore.collection(FirebaseCollections.FRIEND_REQUESTS)
+        for (field in listOf("senderUid", "receiverUid")) {
+            val records = requests
+                .whereEqualTo(field, uid)
+                .whereEqualTo("status", "ACCEPTED")
+                .limit(50)
+                .get()
+                .await()
+            for (record in records.documents) {
+                val sender = record.getString("senderUid")
+                val receiver = record.getString("receiverUid")
+                val friendUid = if (sender == uid) receiver else sender
+                if (!friendUid.isNullOrBlank() && friendUid != uid) friendUids += friendUid
+            }
+        }
 
         var count = 0
-
-        for (friend in friends.documents) {
-            val friendUid = friend.id
+        for (friendUid in friendUids) {
             val attending = attendees(eventId)
                 .document(friendUid)
                 .get()
@@ -116,5 +129,23 @@ class AttendanceFirebaseImpl(
             attendingFriends = friends,
             isAttending = attending
         )
+    }
+
+    override suspend fun getAttendingEventIds(): List<String> {
+        val uid = currentUid()
+        val publishedEvents = events
+            .whereEqualTo("status", EventStatus.PUBLISHED.name)
+            .get()
+            .await()
+        val attendingIds = mutableListOf<String>()
+        for (event in publishedEvents.documents) {
+            if (!shouldIncludeAttendingEvent(event.getString("status"), event.getString("visibility"))) continue
+            val attendee = event.reference.collection("attendees")
+                .document(uid)
+                .get()
+                .await()
+            if (attendee.exists()) attendingIds += event.id
+        }
+        return attendingIds.distinct()
     }
 }

@@ -17,7 +17,10 @@ class FriendsRepositoryTest {
         store.emails["me@test.com"] = "me"
         store.emails["ana@test.com"] = "other"
     }
-    private fun repo(fake: FakeFriendsFirebase) = FriendsRepository(fake) { fake.actor }
+    private fun repo(
+        fake: FakeFriendsFirebase,
+        accountType: suspend () -> String? = { "USER" }
+    ) = FriendsRepository(fake, { fake.actor }, accountType)
     private suspend fun rejected(block: suspend () -> Unit) {
         try { block(); fail("Expected rejected action") } catch (_: IllegalArgumentException) { } catch (_: IllegalStateException) { }
     }
@@ -151,13 +154,22 @@ class FriendsRepositoryTest {
         assertTrue(fake.store.relationships.isEmpty())
     }
 
+    @Test fun businessAccountsCannotLoadOrSendFriendRequests() = runTest {
+        val fake = fake()
+        val business = repo(fake) { "BUSINESS" }
+        rejected { business.load() }
+        rejected { business.send("ana@test.com") }
+        rejected { business.accept("any-request") }
+        assertEquals(0, fake.sendCalls)
+    }
+
     @Test fun permissionsArePropagatedAndUnauthenticatedCallsNeverReachBackend() = runTest {
         val fake = fake().apply { mutationFailure = FriendsActionException("PERMISSION_DENIED", "Denied") }
         try { repo(fake).send("ana@test.com"); fail("Expected denied") }
         catch (error: FriendsActionException) { assertTrue(friendsFailureMessage(error).contains("PERMISSION_DENIED")) }
         assertTrue(fake.store.relationships.isEmpty())
         val before = fake.sendCalls
-        val noSession = FriendsRepository(fake) { null }
+        val noSession = FriendsRepository(fake, { null })
         rejected { noSession.send("ana@test.com") }
         assertEquals(before, fake.sendCalls)
     }

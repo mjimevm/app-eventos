@@ -193,7 +193,6 @@ private fun BussinesAccountPage(
                     onBackClick = onBackClick
                 )
             }
-            TextButton(onClick = onAmistades) { Text("Amigos") }
             IconButton(onClick = onAjustes) {
                 Icon(
                     painter = painterResource(id = R.drawable.settings),

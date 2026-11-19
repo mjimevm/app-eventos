@@ -1,6 +1,7 @@
 package plat.proyecto.guatevivo.core.firebase.funciones.amigos.model
 
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.FirebaseNetworkException
 import java.util.Locale
 
 enum class EmailFriendRequestOutcome { SENT, PENDING, FRIENDS }
@@ -22,12 +23,27 @@ fun isValidFriendEmail(value: String): Boolean {
     }
 }
 
+fun friendsErrorCode(error: Exception): String = when (error) {
+    is FriendsActionException -> error.code
+    is FirebaseFirestoreException -> error.code.name
+    is com.google.firebase.auth.FirebaseAuthException -> error.errorCode
+    is FirebaseNetworkException -> "NETWORK_ERROR"
+    else -> "UNKNOWN"
+}
+
 fun friendsFailureMessage(error: Exception): String {
     val code = when (error) {
         is FriendsActionException -> error.code
         is FirebaseFirestoreException -> error.code.name
         else -> null
     }
-    if (code == "PERMISSION_DENIED") return "PERMISSION_DENIED: Firebase denegó la operación. Revisa las reglas, el despliegue y los permisos del backend."
+    if (code == "PERMISSION_DENIED") {
+        val operation = (error as? FriendsActionException)?.message
+            ?.takeIf { it.startsWith("PERFILES") || it.startsWith("friendRequests") }
+            ?.substringBefore(": ")
+        return if (operation != null)
+            "PERMISSION_DENIED: Firebase denegó $operation. Revisa las reglas y el usuario autenticado."
+        else "PERMISSION_DENIED: Firebase denegó la operación."
+    }
     return listOfNotNull(code, error.localizedMessage).joinToString(": ").ifBlank { "No se pudo completar la operación" }
 }

@@ -33,6 +33,9 @@ import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.PublicProfileDto
 import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.EmailFriendRequestOutcome
+import androidx.compose.ui.platform.LocalContext
+import plat.proyecto.guatevivo.GuateVivoApp
+import plat.proyecto.guatevivo.core.firebase.funciones.user.model.AccountType
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Serializable data object FriendsDestination
@@ -50,7 +53,26 @@ fun NavGraphBuilder.friendsScreen(
     onOpenProfile: (String) -> Unit
 ) {
     composable<FriendsDestination> {
-        FriendsRoute(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick, onOpenProfile)
+        val app = LocalContext.current.applicationContext as GuateVivoApp
+        var allowed by remember { mutableStateOf<Boolean?>(null) }
+        LaunchedEffect(Unit) {
+            val uid = app.authRepository.getCurrentUserId()
+            allowed = uid != null &&
+                app.userRepository.getUser(uid)?.accountType == AccountType.USER.name
+        }
+        when (allowed) {
+            true -> FriendsRoute(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick, onOpenProfile)
+            false -> FriendsScaffold(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick) { padding ->
+                Text(
+                    "Las cuentas BUSINESS no pueden usar Amigos.",
+                    modifier = Modifier.padding(padding).padding(16.dp),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            null -> FriendsScaffold(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick) { padding ->
+                CircularProgressIndicator(modifier = Modifier.padding(padding).padding(16.dp))
+            }
+        }
     }
     composable<PublicProfileDestination> { entry ->
         val uid = entry.toRoute<PublicProfileDestination>().uid

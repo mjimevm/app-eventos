@@ -19,6 +19,9 @@ import plat.proyecto.guatevivo.core.firebase.funciones.user.model.UserDto
 import plat.proyecto.guatevivo.core.repository.AuthRepository
 import plat.proyecto.guatevivo.core.repository.EventRepository
 import plat.proyecto.guatevivo.core.repository.UserRepository
+import plat.proyecto.guatevivo.core.repository.AttendanceRepository
+import plat.proyecto.guatevivo.core.firebase.funciones.asistencia.firebase.AttendanceFirebase
+import plat.proyecto.guatevivo.core.firebase.funciones.asistencia.model.AttendanceStatsDto
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountViewModelTest {
@@ -68,10 +71,36 @@ class AccountViewModelTest {
             )
         )
         override suspend fun getMyCreatedEvents(): List<EventDto> = emptyList()
-        override suspend fun getEventById(eventId: String): EventDto? = null
+        override suspend fun getEventById(eventId: String): EventDto? =
+            if (eventId == "attending_1") EventDto(
+                id = "attending_1",
+                nombreEvento = "Evento asistido",
+                fecha = "20/11/2026",
+                hora = "18:00",
+                ubicacion = "Antigua",
+                incluirConfirmacion = true,
+                organizadorId = "other",
+                status = EventStatus.PUBLISHED.name
+            ) else null
         override suspend fun getEventsByOrganizer(organizerId: String): List<EventDto> = emptyList()
         override suspend fun updateEvent(event: EventDto) {}
         override suspend fun deleteEvent(eventId: String) {}
+    }
+
+    private class FakeAttendanceFirebase : AttendanceFirebase {
+        var attending = true
+        var failure: Exception? = null
+        override suspend fun confirmAttendance(eventId: String) { attending = true }
+        override suspend fun cancelAttendance(eventId: String) { attending = false }
+        override suspend fun isAttending(eventId: String): Boolean = attending
+        override suspend fun getTotalAttendees(eventId: String): Int = if (attending) 1 else 0
+        override suspend fun getAttendingFriendsCount(eventId: String): Int = 0
+        override suspend fun getAttendanceStats(eventId: String): AttendanceStatsDto =
+            AttendanceStatsDto(if (attending) 1 else 0, 0, attending)
+        override suspend fun getAttendingEventIds(): List<String> {
+            failure?.let { throw it }
+            return if (attending) listOf("attending_1") else emptyList()
+        }
     }
 
     @Test
@@ -89,5 +118,42 @@ class AccountViewModelTest {
         assertEquals(1, state.listaCreados.size)
         assertEquals("Borrador Test", state.listaCreados[0].title)
         assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun attendingEvents_restoreInProfileAndCancelRemovesThem() = runTest {
+        val authRepo = AuthRepository(FakeAuthFirebase(), FakeUserFirebase())
+        val attendance = FakeAttendanceFirebase()
+        val viewModel = AccountViewModel(
+            authRepo,
+            UserRepository(FakeUserFirebase()),
+            FakeEventRepository(),
+            AttendanceRepository(attendance)
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.listaAsistidos.size)
+        assertEquals("Evento asistido", viewModel.state.value.listaAsistidos.single().title)
+
+        attendance.attending = false
+        viewModel.loadData()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.state.value.listaAsistidos.isEmpty())
+        assertEquals(0, viewModel.state.value.listaAsistidos.size)
+    }
+
+    @Test
+    fun attendingLoadFailure_isReportedWithoutMockData() = runTest {
+        val attendance = FakeAttendanceFirebase().apply {
+            failure = IllegalStateException("Firestore no disponible")
+        }
+        val viewModel = AccountViewModel(
+            AuthRepository(FakeAuthFirebase(), FakeUserFirebase()),
+            UserRepository(FakeUserFirebase()),
+            FakeEventRepository(),
+            AttendanceRepository(attendance)
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.state.value.error!!.contains("Firestore no disponible"))
+        assertTrue(viewModel.state.value.listaAsistidos.isEmpty())
     }
 }

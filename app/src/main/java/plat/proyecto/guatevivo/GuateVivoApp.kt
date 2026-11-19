@@ -23,6 +23,7 @@ import plat.proyecto.guatevivo.core.repository.EventRepository
 import plat.proyecto.guatevivo.core.repository.EventRepositoryImpl
 import plat.proyecto.guatevivo.core.repository.UserRepository
 import plat.proyecto.guatevivo.core.repository.FriendsRepository
+import plat.proyecto.guatevivo.core.repository.AttendanceRepository
 
 class GuateVivoApp : Application() {
     val firebaseAuth: FirebaseAuth by lazy {
@@ -84,7 +85,17 @@ class GuateVivoApp : Application() {
     }
 
     val friendsRepository: FriendsRepository by lazy {
-        FriendsRepository(friendsFirebase, authRepository::getCurrentUserId)
+        FriendsRepository(
+            friendsFirebase,
+            authRepository::getCurrentUserId
+        ) {
+            val uid = authRepository.getCurrentUserId() ?: return@FriendsRepository null
+            userRepository.getUser(uid)?.accountType
+        }
+    }
+
+    val attendanceRepository: AttendanceRepository by lazy {
+        AttendanceRepository(attendanceFirebase)
     }
 
     val eventRepository: EventRepository by lazy {

@@ -7,9 +7,9 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import kotlinx.coroutines.CancellationException
 import plat.proyecto.guatevivo.GuateVivoApp
 import plat.proyecto.guatevivo.core.repository.EventRepository
+import plat.proyecto.guatevivo.core.repository.AttendanceRepository
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +27,7 @@ import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventVisibili
 class EventInfoViewModel(
     private val destination: EventInfoDestination,
     private val eventRepository: EventRepository,
+    private val attendanceRepository: AttendanceRepository? = null,
     private val currentUserId: () -> String? = { null }
 ) : ViewModel() {
 
@@ -37,7 +38,7 @@ class EventInfoViewModel(
                 val app = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as GuateVivoApp
                 return EventInfoViewModel(
                     extras.createSavedStateHandle().toRoute<EventInfoDestination>(),
-                    app.eventRepository, app.authRepository::getCurrentUserId
+                    app.eventRepository, app.attendanceRepository, app.authRepository::getCurrentUserId
                 ) as T
             }
         }
@@ -75,6 +76,9 @@ class EventInfoViewModel(
                     val date = try {
                         LocalDate.parse(event.fecha, DateTimeFormatter.ofPattern("dd/MM/uuuu"))
                     } catch (_: DateTimeParseException) { null }
+                    val canAttend = !uid.isNullOrBlank()
+                        && event.status == EventStatus.PUBLISHED.name
+                        && event.incluirConfirmacion
                     _state.update {
                         it.copy(
                             titulo = event.nombreEvento,
@@ -87,9 +91,14 @@ class EventInfoViewModel(
                             eventId = event.id,
                             canManage = !uid.isNullOrBlank() && uid == event.organizadorId,
                             canShare = event.status == EventStatus.PUBLISHED.name && event.visibility == EventVisibility.PUBLIC.name,
+                            canAttend = canAttend,
+                            isAttending = false,
+                            totalAttendees = 0,
+                            attendingFriendsCount = 0,
                             isLoading = false
                         )
                     }
+                    if (canAttend) loadAttendanceStats(event.id)
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e
                     loadedEvent = null
@@ -99,6 +108,71 @@ class EventInfoViewModel(
                             dia = "", mes = "", ubicacion = "", shareText = null, showDeleteConfirmation = false,
                             error = e.localizedMessage ?: "Error al cargar el evento")
                     }
+                }
+            }
+        }
+    }
+
+    private fun loadAttendanceStats(eventId: String) {
+        val repository = attendanceRepository ?: return
+        if (_state.value.isAttendanceLoading) return
+        _state.update { it.copy(isAttendanceLoading = true, error = null) }
+        viewModelScope.launch {
+            try {
+                val stats = repository.getStats(eventId)
+                _state.update {
+                    it.copy(
+                        isAttendanceLoading = false,
+                        isAttending = stats.isAttending,
+                        totalAttendees = stats.totalAttendees,
+                        attendingFriendsCount = stats.attendingFriends
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _state.update {
+                    it.copy(
+                        isAttendanceLoading = false,
+                        error = "No se pudo cargar la asistencia: ${e.localizedMessage ?: "Error desconocido"}"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun toggleAttendance() {
+        val repository = attendanceRepository
+        val event = loadedEvent
+        val uid = currentUserId()
+        if (repository == null || event == null || uid.isNullOrBlank() ||
+            !event.incluirConfirmacion || event.status != EventStatus.PUBLISHED.name ||
+            _state.value.isAttendanceLoading) return
+
+        _state.update { it.copy(isAttendanceLoading = true, error = null) }
+        viewModelScope.launch {
+            try {
+                if (_state.value.isAttending) repository.cancel(event.id)
+                else repository.confirm(event.id)
+                val stats = repository.getStats(event.id)
+                _state.update {
+                    it.copy(
+                        isAttendanceLoading = false,
+                        isAttending = stats.isAttending,
+                        totalAttendees = stats.totalAttendees,
+                        attendingFriendsCount = stats.attendingFriends,
+                        successMessage = if (stats.isAttending)
+                            "¡Te has registrado al evento exitosamente!"
+                        else
+                            "Has cancelado tu asistencia al evento."
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _state.update {
+                    it.copy(
+                        isAttendanceLoading = false,
+                        error = "No se pudo actualizar la asistencia: ${e.localizedMessage ?: "Error desconocido"}"
+                    )
                 }
             }
         }
@@ -145,18 +219,7 @@ class EventInfoViewModel(
         when (event) {
             is EventInfoEvent.ToggleAttend -> {
                 if (!_state.value.canAttend || _state.value.isLoading) return
-                viewModelScope.launch {
-                    _state.update { it.copy(isLoading = true) }
-                    delay(500)
-                    _state.update { currentState ->
-                        val newAttending = !currentState.isAttending
-                        currentState.copy(
-                            isLoading = false,
-                            isAttending = newAttending,
-                            successMessage = if (newAttending) "¡Te has registrado al evento exitosamente!" else "Has cancelado tu asistencia al evento."
-                        )
-                    }
-                }
+                toggleAttendance()
             }
             is EventInfoEvent.ClearMessage -> {
                 _state.update { it.copy(successMessage = null, error = null) }

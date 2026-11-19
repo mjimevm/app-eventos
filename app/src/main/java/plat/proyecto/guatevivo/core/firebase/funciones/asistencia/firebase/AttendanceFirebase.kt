@@ -9,4 +9,5 @@ interface AttendanceFirebase {
     suspend fun getTotalAttendees(eventId: String): Int
     suspend fun getAttendingFriendsCount(eventId: String): Int
     suspend fun getAttendanceStats(eventId: String): AttendanceStatsDto
+    suspend fun getAttendingEventIds(): List<String>
 }
