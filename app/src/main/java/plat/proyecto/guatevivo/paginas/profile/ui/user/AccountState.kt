@@ -1,13 +1,14 @@
 package plat.proyecto.guatevivo.paginas.profile.ui.user
 
-import plat.proyecto.guatevivo.R
+import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteItem
 
 data class AccountState(
-    val usuario: String = "Alejandro Morales",
-    val correo: String = "alejandro.morales@guatevivo.plat",
-    val imagenPerfil: Int = R.drawable.account_circle,
-    val listaAsistidos: List<String> = listOf("Festival de Barriletes Gigantes", "Cena de Café en Atitlán"),
-    val listaCreados: List<String> = listOf("Concierto Acústico Antigua"),
-    val listaCompartidos: List<String> = listOf("Feria Gastronómica Chapina"),
-    val isLoading: Boolean = false
+    val usuario: String = "",
+    val correo: String = "",
+    val imagenPerfil: Int? = null,
+    val listaAsistidos: List<ProximamenteItem> = emptyList(),
+    val listaCreados: List<ProximamenteItem> = emptyList(),
+    val listaCompartidos: List<ProximamenteItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
 )

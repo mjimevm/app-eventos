@@ -4,4 +4,5 @@ object FirebaseCollections {
     const val USERS = "users"
     const val EVENTS = "events"
     const val FRIEND_REQUESTS = "friendRequests"
+    const val PUBLIC_PROFILES = "publicProfiles"
 }

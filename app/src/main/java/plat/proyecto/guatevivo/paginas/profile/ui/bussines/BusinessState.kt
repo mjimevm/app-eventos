@@ -1,9 +1,13 @@
 package plat.proyecto.guatevivo.paginas.profile.ui.bussines
 
+import plat.proyecto.guatevivo.paginas.home.ui.home.ProximamenteItem
+
 data class BusinessState(
-    val empresaNombre: String = "Antigua Producciones S.A.",
-    val categoria: String = "Organizador de Eventos y Conciertos",
-    val eventosPublicados: Int = 5,
-    val seguidores: Int = 1240,
-    val isLoading: Boolean = false
+    val empresaNombre: String = "",
+    val categoria: String = "",
+    val listaCreados: List<ProximamenteItem> = emptyList(),
+    val listaPublicados: List<ProximamenteItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val processingEventId: String? = null,
+    val error: String? = null
 )

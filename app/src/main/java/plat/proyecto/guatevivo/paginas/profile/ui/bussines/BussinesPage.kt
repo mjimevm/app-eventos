@@ -28,6 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,6 +41,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -66,7 +72,8 @@ fun NavGraphBuilder.businessAccountScreen(
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
     onAjustes: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: (String) -> Unit,
+    onAmistades: () -> Unit = {}
 ) {
     composable<BusinessAccountDestination> {
         BusinessAccountRoute(
@@ -75,7 +82,8 @@ fun NavGraphBuilder.businessAccountScreen(
             onCreateClick = onCreateClick,
             onProfileClick = onProfileClick,
             onAjustes = onAjustes,
-            onEvent = onEvent
+            onEvent = onEvent,
+            onAmistades = onAmistades
         )
     }
 }
@@ -87,10 +95,15 @@ fun BusinessAccountRoute(
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
     onAjustes: () -> Unit,
-    onEvent: () -> Unit,
-    viewModel: BusinessViewModel = viewModel(factory = BusinessViewModel.Factory)
+    onEvent: (String) -> Unit,
+    viewModel: BusinessViewModel = viewModel(factory = BusinessViewModel.Factory),
+    onAmistades: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.loadData()
+    }
 
     BussinesAccountPage(
         usuario = state.empresaNombre,
@@ -98,14 +111,21 @@ fun BusinessAccountRoute(
         imagenPerfil = null,
         numero = "",
         ubicacion = "",
-        listaCreados = emptyList(),
-        listaPublicados = emptyList(),
+        listaCreados = state.listaCreados,
+        listaPublicados = state.listaPublicados,
+        isLoading = state.isLoading,
+        error = state.error,
+        actionsEnabled = !state.isLoading && state.processingEventId == null,
+        onPublishDraft = { viewModel.onEvent(BusinessEvent.PublishDraft(it)) },
+        onDeleteDraft = { viewModel.onEvent(BusinessEvent.DeleteDraft(it)) },
+        onClearError = { viewModel.onEvent(BusinessEvent.ClearError) },
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
         onProfileClick = onProfileClick,
         onAjustes = onAjustes,
-        onEvent = onEvent
+        onEvent = onEvent,
+        onAmistades = onAmistades
     )
 }
 
@@ -116,7 +136,7 @@ private fun BussinesAccountPage(
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onEvent: () -> Unit = {},
+    onEvent: (String) -> Unit = {},
     usuario: String = "",
     correo: String = "",
     imagenPerfil: Int? = null,
@@ -125,9 +145,33 @@ private fun BussinesAccountPage(
     onBackClick: () -> Unit = {},
     onAjustes: () -> Unit = {},
     listaPublicados: List<ProximamenteItem> = listOf(),
-    listaCreados: List<ProximamenteItem> = listOf()
+    listaCreados: List<ProximamenteItem> = listOf(),
+    isLoading: Boolean = false,
+    error: String? = null,
+    actionsEnabled: Boolean = true,
+    onPublishDraft: (String) -> Unit = {},
+    onDeleteDraft: (String) -> Unit = {},
+    onClearError: () -> Unit = {},
+    onAmistades: () -> Unit = {}
 ) {
     var seleccionado by remember { mutableIntStateOf(0) }
+    var pendingDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
+    pendingDeleteId?.let { eventId ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteId = null },
+            title = { Text("Eliminar borrador") },
+            text = { Text("El borrador se eliminará permanentemente.") },
+            confirmButton = {
+                TextButton(enabled = actionsEnabled, onClick = {
+                    pendingDeleteId = null
+                    onDeleteDraft(eventId)
+                }) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteId = null }) { Text("Cancelar") }
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -149,6 +193,7 @@ private fun BussinesAccountPage(
                     onBackClick = onBackClick
                 )
             }
+            TextButton(onClick = onAmistades) { Text("Amigos") }
             IconButton(onClick = onAjustes) {
                 Icon(
                     painter = painterResource(id = R.drawable.settings),
@@ -156,6 +201,41 @@ private fun BussinesAccountPage(
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(28.dp)
                 )
+            }
+        }
+
+        if (isLoading || !actionsEnabled) {
+            androidx.compose.material3.LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        error?.let { errorMessage ->
+            androidx.compose.material3.Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    androidx.compose.material3.TextButton(onClick = onClearError) {
+                        Text("Cerrar", color = MaterialTheme.colorScheme.onErrorContainer)
+                    }
+                }
             }
         }
 
@@ -284,8 +364,24 @@ private fun BussinesAccountPage(
                         ubicacion = item.ubicacion,
                         cantidadAmigos = 0,
                         imageResId = item.imageResId,
-                        onEvent = onEvent
+                        imageUrl = item.imageUrl,
+                        onEvent = { onEvent(item.eventId) }
                     )
+                    if (seleccionado == 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                enabled = actionsEnabled,
+                                onClick = { onPublishDraft(item.eventId) }
+                            ) { Text("Publicar") }
+                            TextButton(
+                                enabled = actionsEnabled,
+                                onClick = { pendingDeleteId = item.eventId }
+                            ) { Text("Eliminar") }
+                        }
+                    }
                 }
             }
         }

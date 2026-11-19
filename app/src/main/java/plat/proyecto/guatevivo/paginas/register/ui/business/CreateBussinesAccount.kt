@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -66,7 +67,8 @@ fun CreateBusinessRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onCreate = { viewModel.onEvent(RegisterBusinessEvent.OnRegisterClicked) },
-        onBack = onBack
+        onBack = onBack,
+        demoContent = { if (!state.isLoading && !state.isSuccess) BusinessDemoEntry() }
     )
 }
 
@@ -77,19 +79,21 @@ private fun CreateBussinesAccount(
     state: RegisterBusinessState = RegisterBusinessState(),
     onEvent: (RegisterBusinessEvent) -> Unit = {},
     onCreate: () -> Unit = {},
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    demoContent: @Composable () -> Unit = {}
 ) {
-    val nombreEmpresaState = rememberTextFieldState()
-    val emailEmpresarialState = rememberTextFieldState()
-    val telefonoState = rememberTextFieldState()
-    val direccionState = rememberTextFieldState()
-    val descripcionState = rememberTextFieldState()
-    val passwordState = rememberTextFieldState()
-    val confirmPasswordState = rememberTextFieldState()
-    var aceptoTerminos by remember { mutableStateOf(false) }
-    var esRepresentante by remember { mutableStateOf(false) }
+    val nombreEmpresaState = rememberTextFieldState(initialText = state.empresaNombre)
+    val emailEmpresarialState = rememberTextFieldState(initialText = state.correo)
+    val telefonoState = rememberTextFieldState(initialText = state.telefono)
+    val direccionState = rememberTextFieldState(initialText = state.direccion)
+    val descripcionState = rememberTextFieldState(initialText = state.descripcion)
+    val passwordState = rememberTextFieldState(initialText = state.password)
+    val confirmPasswordState = rememberTextFieldState(initialText = state.confirmPassword)
+    var aceptoTerminos by rememberSaveable { mutableStateOf(state.aceptoTerminos) }
+    var esRepresentante by rememberSaveable { mutableStateOf(state.esRepresentante) }
 
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
+    val canEdit = !state.isLoading && state.partialUid == null && !state.isSuccess
 
     Scaffold(
         modifier = modifier,
@@ -110,6 +114,10 @@ private fun CreateBussinesAccount(
                     .padding(horizontal = 24.dp)
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
+                if (state.partialUid != null) {
+                    Text("Authentication ya creó la cuenta. El botón reintenta guardar el perfil original; no vuelve a registrar el correo.")
+                }
+                demoContent()
 
                 Text(
                     text = "Impulsa tu negocio",
@@ -173,32 +181,38 @@ private fun CreateBussinesAccount(
 
                             InputField(
                                 label = "Nombre de la Empresa",
-                                state = nombreEmpresaState
+                                state = nombreEmpresaState,
+                                enabled = canEdit
                             )
 
                             InputField(
                                 label = "Correo Empresarial",
-                                state = emailEmpresarialState
+                                state = emailEmpresarialState,
+                                enabled = canEdit
                             )
 
                             InputField(
                                 label = "Teléfono de Contacto",
-                                state = telefonoState
+                                state = telefonoState,
+                                enabled = canEdit
                             )
 
                             InputField(
                                 label = "Dirección",
-                                state = direccionState
+                                state = direccionState,
+                                enabled = canEdit
                             )
 
                             InputField(
                                 label = "Descripción",
-                                state = descripcionState
+                                state = descripcionState,
+                                enabled = canEdit
                             )
 
                             InputField(
                                 label = "Contraseña",
                                 state = passwordState,
+                                enabled = canEdit,
                                 isPassword = true,
                                 icon = R.drawable.lock_icon
                             )
@@ -206,6 +220,7 @@ private fun CreateBussinesAccount(
                             InputField(
                                 label = "Confirmar Contraseña",
                                 state = confirmPasswordState,
+                                enabled = canEdit,
                                 isPassword = true,
                                 icon = R.drawable.lock_icon
                             )
@@ -222,6 +237,7 @@ private fun CreateBussinesAccount(
                     ) {
                         Checkbox(
                             checked = aceptoTerminos,
+                            enabled = canEdit,
                             onCheckedChange = { aceptoTerminos = it },
                             colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                         )
@@ -236,6 +252,7 @@ private fun CreateBussinesAccount(
                     ) {
                         Checkbox(
                             checked = esRepresentante,
+                            enabled = canEdit,
                             onCheckedChange = { esRepresentante = it },
                             colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                         )
@@ -270,7 +287,7 @@ private fun CreateBussinesAccount(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
-                enabled = !state.isLoading
+                enabled = !state.isLoading && !state.isSuccess
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(
@@ -280,7 +297,7 @@ private fun CreateBussinesAccount(
                     )
                 } else {
                     Text(
-                        text = "Crear Cuenta Empresarial",
+                        text = if (state.partialUid != null) "Reintentar guardar perfil" else "Crear Cuenta Empresarial",
                         fontSize = 18.sp,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
@@ -298,7 +315,8 @@ private fun InputField(
     state: TextFieldState,
     modifier: Modifier = Modifier,
     icon: Any? = null,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    enabled: Boolean = true
 ) {
     val leadingIconContent: @Composable (() -> Unit)? = icon?.let {
         {
@@ -323,6 +341,7 @@ private fun InputField(
     if (isPassword) {
         OutlinedSecureTextField(
             state = state,
+            enabled = enabled,
             modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
             label = { Text(text = label) },
             leadingIcon = leadingIconContent,
@@ -337,6 +356,7 @@ private fun InputField(
     } else {
         OutlinedTextField(
             state = state,
+            enabled = enabled,
             modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
             label = { Text(text = label) },
             leadingIcon = leadingIconContent,

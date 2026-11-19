@@ -12,5 +12,6 @@ data class RegisterBusinessState(
     val esRepresentante: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val partialUid: String? = null
 )

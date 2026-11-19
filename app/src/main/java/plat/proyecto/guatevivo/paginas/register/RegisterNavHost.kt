@@ -7,6 +7,7 @@ import androidx.navigation.navOptions
 import androidx.navigation.navigation
 import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.paginas.home.ui.home.navigateToHome
+import plat.proyecto.guatevivo.paginas.profile.ui.bussines.navigateToBusinessAccount
 import plat.proyecto.guatevivo.paginas.login.ui.AuthNavHost
 import plat.proyecto.guatevivo.paginas.register.ui.business.navigateToRegisterBusiness
 import plat.proyecto.guatevivo.paginas.register.ui.business.registerBusinessScreen
@@ -35,7 +36,7 @@ fun NavGraphBuilder.registerNestNav(navController: NavController) {
         )
         registerBusinessScreen(
             onCreate = {
-                navController.navigateToHome(
+                navController.navigateToBusinessAccount(
                     navOptions {
                         popUpTo<AuthNavHost> {
                             inclusive = true

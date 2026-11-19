@@ -10,4 +10,7 @@ sealed interface CreateEventEvent {
     data class UpdateImageUri(val uri: String?) : CreateEventEvent
     data object CreateEvent : CreateEventEvent
     data object ClearError : CreateEventEvent
+
+    data object ClearSuccess : CreateEventEvent
+    data object RetryLoad : CreateEventEvent
 }

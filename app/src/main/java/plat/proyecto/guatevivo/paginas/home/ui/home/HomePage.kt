@@ -16,7 +16,9 @@ import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -38,6 +41,7 @@ import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.R
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
+import plat.proyecto.guatevivo.paginas.home.ui.CatalogStatus
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Serializable
@@ -52,7 +56,7 @@ fun NavGraphBuilder.homeScreen(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onEvent: (Int) -> Unit
+    onEvent: (String) -> Unit
 ) {
     composable<HomeDestination> {
         HomeRoute(
@@ -71,10 +75,11 @@ fun HomeRoute(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onEvent: (Int) -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    onEvent: (String) -> Unit,
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
 
     HomeScreen(
         state = state,
@@ -92,7 +97,9 @@ fun DestacadosCard(
     onEvent: () -> Unit,
     titulo: String,
     ubicacion: String,
-    @DrawableRes imageResId: Int
+    @DrawableRes imageResId: Int,
+    imageUrl: String = "",
+    fechaHora: String = ""
 ) {
     Card(
         modifier = Modifier
@@ -100,12 +107,16 @@ fun DestacadosCard(
             .clickable(enabled = true, onClick = onEvent),
         shape = RoundedCornerShape(4.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(id = imageResId),
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)) {
+            if (imageUrl.isNotBlank()) AsyncImage(
+                model = imageUrl,
                 contentDescription = titulo,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
+            )
+            else if (imageResId != 0) Image(
+                painter = painterResource(id = imageResId), contentDescription = titulo,
+                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
             )
 
             Box(
@@ -136,6 +147,7 @@ fun DestacadosCard(
                     color = Color.White.copy(alpha = 0.9f),
                     style = MaterialTheme.typography.bodyMedium
                 )
+                if (fechaHora.isNotBlank()) Text(text = fechaHora, color = Color.White, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -143,7 +155,7 @@ fun DestacadosCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DestacadosCarousel(items: List<CarouselItem>, onEventClick: (Int) -> Unit) {
+fun DestacadosCarousel(items: List<CarouselItem>, onEventClick: (String) -> Unit) {
     HorizontalMultiBrowseCarousel(
         state = rememberCarouselState { items.count() },
         preferredItemWidth = 330.dp,
@@ -159,7 +171,9 @@ fun DestacadosCarousel(items: List<CarouselItem>, onEventClick: (Int) -> Unit) {
             titulo = item.titulo,
             ubicacion = item.ubicacion,
             imageResId = item.imageResId,
-            onEvent = { onEventClick(item.id) }
+            imageUrl = item.imageUrl,
+            fechaHora = item.fechaHora,
+            onEvent = { onEventClick(item.eventId) }
         )
     }
 }
@@ -172,7 +186,7 @@ private fun HomeScreen(
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onEventClick: (Int) -> Unit = {}
+    onEventClick: (String) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -200,7 +214,7 @@ private fun HomeScreen(
         ) {
             // 1. Barra de Búsqueda
             item {
-                SearchBarSection()
+                SearchBarSection(query = state.searchQuery, onQueryChange = { onEvent(HomeEvent.UpdateQuery(it)) })
             }
 
             // 2. Filtros de Categorías
@@ -208,33 +222,101 @@ private fun HomeScreen(
                 CategoryFilters(
                     categories = state.categories,
                     selectedCategory = state.selectedCategory,
-                    onCategorySelected = { category -> onEvent(HomeEvent.SelectCategory(category)) }
+                    onCategorySelected = { category -> onEvent(HomeEvent.SelectCategory(category)) },
+                    isCategoryAvailable = { it == "Todos" }
                 )
+                if (state.searchQuery.isNotEmpty()) TextButton(onClick = { onEvent(HomeEvent.ResetFilters) }) {
+                    Text(
+                        text = "Restablecer búsqueda",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
             }
 
+
             // 3. Sección Destacados
-            item {
+            if (state.destacadosItems.isNotEmpty()) item {
                 SectionHeader(title = "Destacados")
             }
-            item {
+            if (state.destacadosItems.isNotEmpty()) item {
                 DestacadosCarousel(items = state.destacadosItems, onEventClick = onEventClick)
             }
 
             // 4. Sección Próximamente
             item {
-                SectionHeader(title = "Próximamente", hasAction = true)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Próximamente",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    IconButton(
+                        onClick = { onEvent(HomeEvent.Refresh) },
+                        enabled = !state.isLoading
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.refresh),
+                                contentDescription = "Actualizar eventos",
+                                modifier = Modifier.size(22.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Mensaje debajo de Próximamente
+            if (!state.isLoading &&
+                state.error == null &&
+                state.proximamenteItems.isEmpty()
+            ) {
+                item {
+                    Text(
+                        text = if (state.searchQuery.isBlank()) {
+                            "No hay próximos eventos públicos."
+                        } else {
+                            "No se encontraron coincidencias."
+                        },
+                        modifier = Modifier.padding(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // Lista de eventos próximos
-            items(state.proximamenteItems) { item ->
+            items(state.proximamenteItems, key = { it.eventId }) { item ->
                 ProximamenteCard(
-                    onEvent = { onEventClick(item.id) },
+                    onEvent = { onEventClick(item.eventId) },
                     titulo = item.titulo,
                     fecha = item.fecha,
                     dia = item.dia,
                     ubicacion = item.ubicacion,
                     cantidadAmigos = item.cantidadAmigos,
-                    imageResId = item.imageResId
+                    imageResId = item.imageResId,
+                    imageUrl = item.imageUrl,
+                    fullDate = item.fullDate,
+                    hora = item.hora
                 )
             }
         }
@@ -293,6 +375,7 @@ fun SearchBarSection(
                 },
                 modifier = Modifier.weight(1f)
             )
+            if (query.isNotEmpty()) TextButton(onClick = { onQueryChange("") }) { Text("Limpiar") }
             Icon(
                 painter = painterResource(id = R.drawable.search),
                 contentDescription = "Buscar",
@@ -306,7 +389,8 @@ fun SearchBarSection(
 fun CategoryFilters(
     categories: List<String>,
     selectedCategory: String,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    isCategoryAvailable: (String) -> Boolean = { true }
 ) {
     LazyRow(
         modifier = Modifier
@@ -318,9 +402,10 @@ fun CategoryFilters(
             val isSelected = category == selectedCategory
             Button(
                 onClick = { onCategorySelected(category) },
+                enabled = isCategoryAvailable(category),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                    contentColor = if (isSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 shape = RoundedCornerShape(4.dp),
                 border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
@@ -356,7 +441,6 @@ fun SectionHeader(title: String, hasAction: Boolean = false) {
         }
     }
 }
-
 @Composable
 fun ProximamenteCard(
     onEvent: () -> Unit = {},
@@ -365,49 +449,78 @@ fun ProximamenteCard(
     dia: Int,
     ubicacion: String,
     cantidadAmigos: Int,
-    @DrawableRes imageResId: Int
+    @DrawableRes imageResId: Int,
+    imageUrl: String = "",
+    fullDate: String = "",
+    hora: String = ""
 ) {
+    val tieneImagen = imageUrl.isNotBlank() || imageResId != 0
+
     Card(
         modifier = Modifier
             .clickable(enabled = true, onClick = onEvent)
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(2.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant
+        )
     ) {
         Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = imageResId),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+
+            // Mostrar este espacio SOLO si hay imagen
+            if (tieneImagen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
 
+            // Información original del evento
             Row(
                 modifier = Modifier.padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = titulo,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
                     Text(
                         text = ubicacion,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    if (fullDate.isNotBlank() || hora.isNotBlank()) {
+                        Text(
+                            text = listOf(fullDate, hora)
+                                .filter { it.isNotBlank() }
+                                .joinToString(" · "),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Surface(
@@ -426,6 +539,7 @@ fun ProximamenteCard(
                             color = MaterialTheme.colorScheme.tertiaryContainer,
                             fontWeight = FontWeight.Bold
                         )
+
                         Text(
                             text = dia.toString(),
                             fontSize = 20.sp,
@@ -436,6 +550,7 @@ fun ProximamenteCard(
                 }
             }
 
+            // Sección original de amigos
             if (cantidadAmigos != 0) {
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -448,16 +563,20 @@ fun ProximamenteCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(modifier = Modifier
-                        .height(32.dp)
-                        .width(52.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .height(32.dp)
+                            .width(52.dp)
+                    ) {
                         Surface(
                             modifier = Modifier.size(32.dp),
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.account_circle),
+                                painter = painterResource(
+                                    id = R.drawable.account_circle
+                                ),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -469,17 +588,27 @@ fun ProximamenteCard(
                                 .size(32.dp),
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+                            border = BorderStroke(
+                                2.dp,
+                                MaterialTheme.colorScheme.surface
+                            )
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.account_circle),
+                                painter = painterResource(
+                                    id = R.drawable.account_circle
+                                ),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                     }
+
                     Text(
-                        text = if (cantidadAmigos > 1) "$cantidadAmigos amigos asistirán" else "$cantidadAmigos amigo asistirá",
+                        text = if (cantidadAmigos > 1) {
+                            "$cantidadAmigos amigos asistirán"
+                        } else {
+                            "$cantidadAmigos amigo asistirá"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -1,6 +1,5 @@
 package plat.proyecto.guatevivo.paginas.register.ui.business
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -14,6 +13,8 @@ import plat.proyecto.guatevivo.GuateVivoApp
 import plat.proyecto.guatevivo.core.firebase.funciones.user.model.AccountType
 import plat.proyecto.guatevivo.core.firebase.funciones.user.model.UserDto
 import plat.proyecto.guatevivo.core.repository.AuthRepository
+import plat.proyecto.guatevivo.core.repository.RegistrationException
+import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 
 class RegisterBusinessViewModel(
@@ -33,9 +34,11 @@ class RegisterBusinessViewModel(
 
     private val _state = MutableStateFlow(RegisterBusinessState())
     val state: StateFlow<RegisterBusinessState> = _state.asStateFlow()
+    private var pendingProfile: UserDto? = null
 
     fun onEvent(event: RegisterBusinessEvent) {
         if (_state.value.isLoading) return
+        if (_state.value.partialUid != null && event != RegisterBusinessEvent.OnRegisterClicked) return
         when (event) {
             is RegisterBusinessEvent.OnEmpresaChanged -> _state.update { it.copy(empresaNombre = event.nombre, errorMessage = null) }
             is RegisterBusinessEvent.OnCorreoChanged -> _state.update { it.copy(correo = event.correo, errorMessage = null) }
@@ -53,8 +56,21 @@ class RegisterBusinessViewModel(
     private fun register() {
         val st = _state.value
         if (st.isLoading) return
+        if (st.isSuccess) return
+        if (st.partialUid != null) {
+            submitProfile(st.partialUid, checkNotNull(pendingProfile))
+            return
+        }
         if (st.empresaNombre.isBlank() || st.correo.isBlank() || st.password.isBlank() || st.confirmPassword.isBlank()) {
             _state.update { it.copy(errorMessage = "Por favor completa todos los campos obligatorios de la empresa") }
+            return
+        }
+        if (st.empresaNombre.trim().length > 120) {
+            _state.update { it.copy(errorMessage = "El nombre de la empresa admite hasta 120 caracteres") }
+            return
+        }
+        if (!Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$").matches(st.correo.trim())) {
+            _state.update { it.copy(errorMessage = "Ingresa un correo empresarial válido") }
             return
         }
         if (st.password != st.confirmPassword) {
@@ -70,29 +86,37 @@ class RegisterBusinessViewModel(
             return
         }
 
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+        submitProfile(null, UserDto(
+            name = st.empresaNombre.trim(),
+            email = st.correo.trim().lowercase(Locale.ROOT),
+            phone = st.telefono.trim(),
+            address = st.direccion.trim(),
+            description = st.descripcion.trim(),
+            accountType = AccountType.BUSINESS.name
+        ))
+    }
+
+    private fun submitProfile(partialUid: String?, profile: UserDto) {
+        val password = _state.value.password
+        pendingProfile = profile
+        _state.update { it.copy(isLoading = true, errorMessage = null, isSuccess = false) }
         viewModelScope.launch {
             try {
-                authRepository.register(
-                    email = st.correo,
-                    password = st.password,
-                    userDto = UserDto(
-                        name = st.empresaNombre.trim(),
-                        email = st.correo.trim().lowercase(),
-                        phone = st.telefono.trim(),
-                        address = st.direccion.trim(),
-                        description = st.descripcion.trim(),
-                        accountType = AccountType.BUSINESS.name
-                    )
-                )
-                _state.update { it.copy(isLoading = false, isSuccess = true) }
+                if (partialUid == null) {
+                    authRepository.register(profile.email, password, profile)
+                } else {
+                    authRepository.retryRegistrationProfile(partialUid, profile)
+                }
+                _state.update { it.copy(isLoading = false, isSuccess = true, partialUid = null,
+                    password = "", confirmPassword = "") }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No se pudo registrar la cuenta empresarial. Intenta nuevamente."
+                        partialUid = (e as? RegistrationException)?.partialUid ?: partialUid,
+                        errorMessage = e.localizedMessage ?: "No se pudo registrar la cuenta empresarial (${e.javaClass.simpleName})"
                     )
                 }
             }

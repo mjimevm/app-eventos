@@ -10,10 +10,11 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "gu
 
 interface PreferencesRepository {
     val onboardingCompletedFlow: Flow<Boolean>
-    val darkModeFlow: Flow<Boolean>
+    // null means follow the system; existing true/false preferences remain manual overrides.
+    val darkModeFlow: Flow<Boolean?>
 
     suspend fun setOnboardingCompleted(completed: Boolean)
-    suspend fun setDarkMode(enabled: Boolean)
+    suspend fun setDarkMode(enabled: Boolean?)
 
     companion object {
         operator fun invoke(dataStore: DataStore<Preferences>): PreferencesRepository =

@@ -10,5 +10,9 @@ data class CreateEventState(
     val imageUri: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSuccess: Boolean = false
-)
+    val isSuccess: Boolean = false,
+    val eventId: String? = null,
+    val canSave: Boolean = true
+) {
+    val isEditing: Boolean get() = eventId != null
+}

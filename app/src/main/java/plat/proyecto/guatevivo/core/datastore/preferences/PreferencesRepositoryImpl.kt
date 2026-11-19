@@ -31,7 +31,7 @@ class PreferencesRepositoryImpl(
             preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
         }
 
-    override val darkModeFlow: Flow<Boolean> = dataStore.data
+    override val darkModeFlow: Flow<Boolean?> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -40,7 +40,7 @@ class PreferencesRepositoryImpl(
             }
         }
         .map { preferences ->
-            preferences[PreferencesKeys.DARK_MODE] ?: false
+            preferences[PreferencesKeys.DARK_MODE]
         }
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {
@@ -49,9 +49,13 @@ class PreferencesRepositoryImpl(
         }
     }
 
-    override suspend fun setDarkMode(enabled: Boolean) {
+    override suspend fun setDarkMode(enabled: Boolean?) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.DARK_MODE] = enabled
+            if (enabled == null) {
+                preferences.remove(PreferencesKeys.DARK_MODE)
+            } else {
+                preferences[PreferencesKeys.DARK_MODE] = enabled
+            }
         }
     }
 }

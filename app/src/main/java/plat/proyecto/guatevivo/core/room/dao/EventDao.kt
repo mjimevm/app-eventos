@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import plat.proyecto.guatevivo.core.room.entity.EventEntity
 
@@ -20,6 +21,15 @@ interface EventDao {
 
     @Query("SELECT * FROM events WHERE status = 'PUBLISHED' AND visibility = 'PUBLIC'")
     suspend fun getPublicEvents(): List<EventEntity>
+
+    @Query("DELETE FROM events WHERE status = 'PUBLISHED' AND visibility = 'PUBLIC'")
+    suspend fun deletePublicEvents()
+
+    @Transaction
+    suspend fun replacePublicEvents(events: List<EventEntity>) {
+        deletePublicEvents()
+        insertEvents(events)
+    }
 
     @Query("SELECT * FROM events WHERE organizadorId = :organizerId AND status = 'DRAFT'")
     suspend fun getDrafts(organizerId: String): List<EventEntity>

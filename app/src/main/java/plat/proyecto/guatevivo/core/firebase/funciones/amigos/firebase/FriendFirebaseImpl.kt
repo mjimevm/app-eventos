@@ -1,147 +1,109 @@
 package plat.proyecto.guatevivo.core.firebase.funciones.amigos.firebase
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 import plat.proyecto.guatevivo.core.firebase.FirebaseCollections
-import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.FriendDto
-import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.FriendRequestDto
+import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.*
 import plat.proyecto.guatevivo.core.firebase.funciones.user.model.UserDto
 
 class FriendsFirebaseImpl(
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    endpoint: () -> String
 ) : FriendsFirebase {
-    private val users
-        get() = firestore.collection(FirebaseCollections.USERS)
-    private val requests
-        get() = firestore.collection(FirebaseCollections.FRIEND_REQUESTS)
-    private fun currentUid(): String {
-        return auth.currentUser?.uid?: throw IllegalStateException("Usuario no autenticado")
-    }
+    private val emailClient = EmailFriendRequestClient(auth, endpoint)
+    private val users get() = firestore.collection(FirebaseCollections.USERS)
+    private val profiles get() = firestore.collection(FirebaseCollections.PUBLIC_PROFILES)
+    private val requests get() = firestore.collection(FirebaseCollections.FRIEND_REQUESTS)
+    private fun currentUid() = auth.currentUser?.uid ?: error("Debes iniciar sesión")
 
-    private fun friends(uid: String) = users.document(uid).collection("friends")
+    override suspend fun ensureOwnProfile(): PublicProfileDto = syncOwnProfile()
 
-    override suspend fun sendFriendRequest(email: String) {
+    private suspend fun syncOwnProfile(): PublicProfileDto {
         val uid = currentUid()
-        val receiver = users
-            .whereEqualTo("email", email.trim().lowercase())
-            .limit(1)
-            .get()
-            .await()
-            .toObjects(UserDto::class.java)
-            .firstOrNull()
-            ?: throw IllegalArgumentException("Usuario no encontrado")
-
-        require(receiver.uid != uid) { "No puedes enviarte una solicitud a ti mismo" }
-        require(!friends(uid).document(receiver.uid).get().await().exists()) { "Este usuario ya es tu amigo" }
-
-        val existing = requests
-            .whereEqualTo("senderUid", uid)
-            .whereEqualTo("receiverUid", receiver.uid)
-            .whereEqualTo("status", "PENDING")
-            .get()
-            .await()
-
-        require(existing.isEmpty) { "Ya existe una solicitud pendiente" }
-
-        val sender = users.document(uid)
-            .get()
-            .await()
-            .toObject(UserDto::class.java)
-            ?: throw IllegalStateException("Perfil no encontrado")
-
-        val document = requests.document()
-
-        document.set(
-            FriendRequestDto(
-                id = document.id,
-                senderUid = uid,
-                receiverUid = receiver.uid,
-                senderName = sender.name,
-                status = "PENDING"
+        return firestore.runTransaction { transaction ->
+            val source = transaction.get(users.document(uid))
+            val directory = transaction.get(profiles.document(uid))
+            val user = source.toObject(UserDto::class.java) ?: error("Perfil no encontrado")
+            require(!user.isDeleted) { "Esta cuenta fue eliminada" }
+            val profile = user.copy(uid = uid).publicProfile()
+            val fields = mapOf(
+                "nameNormalized" to profile.nameNormalized, "isDiscoverable" to profile.isDiscoverable,
+                "isDeleted" to false, "photoUrl" to profile.photoUrl
             )
-        ).await()
+            if (fields.any { (key, value) -> source.get(key) != value }) transaction.update(users.document(uid), fields)
+            if (directory.toObject(PublicProfileDto::class.java) != profile || directory.data?.size != 7)
+                transaction.set(profiles.document(uid), profile)
+            profile
+        }.await()
     }
 
-    override suspend fun getPendingRequests(): List<FriendRequestDto> {
-        return requests
-            .whereEqualTo("receiverUid", currentUid())
-            .whereEqualTo("status", "PENDING")
-            .get()
-            .await()
-            .toObjects(FriendRequestDto::class.java)
+    override suspend fun getProfile(uid: String): PublicProfileDto? {
+        currentUid()
+        val doc = profiles.document(uid).get(Source.SERVER).await()
+        return doc.toObject(PublicProfileDto::class.java)?.copy(uid = doc.id)?.takeUnless { it.isDeleted }
     }
 
-    override suspend fun acceptFriendRequest(requestId: String) {
+    override suspend fun getRelationships(): List<FriendRequestDto> {
         val uid = currentUid()
-
-        val requestRef = requests.document(requestId)
-        val request = requestRef.get().await()
-            .toObject(FriendRequestDto::class.java)
-            ?: throw IllegalArgumentException("Solicitud no encontrada")
-
-        require(request.receiverUid == uid) { "No puedes aceptar esta solicitud" }
-
-        require(request.status == "PENDING") { "La solicitud ya fue procesada" }
-
-        val receiver = users.document(uid)
-            .get()
-            .await()
-            .toObject(UserDto::class.java)
-            ?: throw IllegalStateException("Perfil no encontrado")
-
-        val batch = firestore.batch()
-
-        batch.set(
-            friends(uid).document(request.senderUid),
-            FriendDto(
-                uid = request.senderUid,
-                name = request.senderName
-            )
-        )
-
-        batch.set(
-            friends(request.senderUid).document(uid),
-            FriendDto(
-                uid = uid,
-                name = receiver.name
-            )
-        )
-
-        batch.update(requestRef, "status", "ACCEPTED")
-        batch.commit().await()
+        val result = mutableListOf<FriendRequestDto>()
+        for (field in listOf("senderUid", "receiverUid")) {
+            val base = requests.whereEqualTo(field, uid).whereIn("status", listOf("PENDING", "ACCEPTED"))
+                .orderBy(FieldPath.documentId()).limit(50)
+            var query = base
+            do {
+                val page = query.get(Source.SERVER).await()
+                result += page.documents.mapNotNull { it.toObject(FriendRequestDto::class.java)?.copy(id = it.id) }
+                val last = page.documents.lastOrNull()
+                if (last != null) query = base.startAfter(last)
+            } while (page.size() == 50)
+        }
+        return result.distinctBy { it.id }
     }
 
-    override suspend fun rejectFriendRequest(requestId: String) {
+    override suspend fun sendFriendRequest(email: String): EmailFriendRequestOutcome {
+        currentUid()
+        return emailClient.send(email)
+    }
+
+    override suspend fun acceptFriendRequest(requestId: String) = respond(requestId, "ACCEPTED")
+    override suspend fun rejectFriendRequest(requestId: String) = respond(requestId, "REJECTED")
+
+    private suspend fun respond(requestId: String, status: String) {
         val uid = currentUid()
-
-        val requestRef = requests.document(requestId)
-        val request = requestRef.get().await()
-            .toObject(FriendRequestDto::class.java)
-            ?: throw IllegalArgumentException("Solicitud no encontrada")
-
-        require(request.receiverUid == uid) { "No puedes rechazar esta solicitud" }
-        require(request.status == "PENDING") { "La solicitud ya fue procesada" }
-
-        requestRef.update("status", "REJECTED").await()
+        val reference = requests.document(requestId)
+        firestore.runTransaction { transaction ->
+            val request = transaction.get(reference).toObject(FriendRequestDto::class.java) ?: error("Solicitud no encontrada")
+            FriendshipPolicy.canRespond(uid, request)
+            val sender = transaction.get(profiles.document(request.senderUid)).toObject(PublicProfileDto::class.java)
+            val receiver = transaction.get(profiles.document(uid)).toObject(PublicProfileDto::class.java)
+            require(sender != null && receiver != null && !sender.isDeleted && !receiver.isDeleted) { "Esta cuenta ya no está disponible" }
+            transaction.update(reference, mapOf("status" to status, "updatedAt" to System.currentTimeMillis()))
+        }.await()
     }
 
-    override suspend fun getFriends(): List<FriendDto> {
-        return friends(currentUid())
-            .get()
-            .await()
-            .toObjects(FriendDto::class.java)
+    override suspend fun cancelFriendRequest(requestId: String) {
+        val uid = currentUid()
+        val reference = requests.document(requestId)
+        firestore.runTransaction { transaction ->
+            val request = transaction.get(reference).toObject(FriendRequestDto::class.java) ?: error("Solicitud no encontrada")
+            FriendshipPolicy.canCancel(uid, request)
+            transaction.delete(reference)
+        }.await()
     }
 
     override suspend fun deleteFriend(friendUid: String) {
         val uid = currentUid()
-        require(friendUid != uid) { "No puedes eliminarte a ti mismo" }
-        val batch = firestore.batch()
-
-        batch.delete(friends(uid).document(friendUid))
-        batch.delete(friends(friendUid).document(uid))
-
-        batch.commit().await()
+        val forward = requests.document(friendRequestId(uid, friendUid))
+        val reverse = requests.document(friendRequestId(friendUid, uid))
+        firestore.runTransaction { transaction ->
+            val records = listOf(forward, reverse).map { it to transaction.get(it).toObject(FriendRequestDto::class.java) }
+            val accepted = records.filter { it.second?.status == "ACCEPTED" }
+            require(accepted.isNotEmpty()) { "Esta amistad ya no existe" }
+            accepted.forEach { transaction.delete(it.first) }
+        }.await()
     }
 }

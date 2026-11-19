@@ -19,6 +19,7 @@ import plat.proyecto.guatevivo.core.firebase.funciones.auth.AuthFirebase
 import plat.proyecto.guatevivo.core.firebase.funciones.user.firebase.UserFirebase
 import plat.proyecto.guatevivo.core.firebase.funciones.user.model.UserDto
 import plat.proyecto.guatevivo.core.repository.AuthRepository
+import plat.proyecto.guatevivo.testing.InMemoryPreferencesDataStore
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -60,19 +61,26 @@ class SettingsViewModelTest {
 
     @Test
     fun darkModeToggle_updatesState() = testScope.runTest {
-        val testFile = tmpFolder.root.resolve("settings_test.preferences_pb")
-        val dataStore = PreferenceDataStoreFactory.create(scope = testScope, produceFile = { testFile })
+        val dataStore = InMemoryPreferencesDataStore()
         val prefRepo = PreferencesRepository(dataStore)
         val authRepo = AuthRepository(FakeAuthFirebase(), FakeUserFirebase())
 
         val viewModel = SettingsViewModel(authRepo, prefRepo)
 
-        assertFalse(viewModel.state.value.darkMode)
+        assertNull(viewModel.state.value.darkMode)
 
         viewModel.onEvent(SettingsEvent.OnDarkModeToggled(true))
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(viewModel.state.value.darkMode)
+        assertEquals(true, viewModel.state.value.darkMode)
+
+        viewModel.onEvent(SettingsEvent.OnDarkModeToggled(false))
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(false, viewModel.state.value.darkMode)
+
+        viewModel.onEvent(SettingsEvent.OnDarkModeToggled(null))
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.state.value.darkMode)
     }
 
     @Test

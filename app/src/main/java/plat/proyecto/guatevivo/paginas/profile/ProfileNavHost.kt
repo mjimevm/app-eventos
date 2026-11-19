@@ -5,6 +5,16 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.navOptions
 import androidx.navigation.navigation
+import androidx.navigation.compose.composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import kotlinx.coroutines.CancellationException
+import plat.proyecto.guatevivo.GuateVivoApp
+import plat.proyecto.guatevivo.core.firebase.funciones.user.model.AccountType
 import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.paginas.event.ui.create.navigateToCreateEvent
 import plat.proyecto.guatevivo.paginas.event.ui.info.navigateToEventInfo
@@ -15,6 +25,7 @@ import plat.proyecto.guatevivo.paginas.profile.ui.bussines.BusinessAccountDestin
 import plat.proyecto.guatevivo.paginas.profile.ui.bussines.businessAccountScreen
 import plat.proyecto.guatevivo.paginas.profile.ui.friends.friendsScreen
 import plat.proyecto.guatevivo.paginas.profile.ui.friends.navigateToFriends
+import plat.proyecto.guatevivo.paginas.profile.ui.friends.navigateToPublicProfile
 import plat.proyecto.guatevivo.paginas.profile.ui.settings.navigateToSettings
 import plat.proyecto.guatevivo.paginas.profile.ui.settings.settingsScreen
 import plat.proyecto.guatevivo.paginas.profile.ui.user.UserAccountDestination
@@ -24,23 +35,57 @@ import plat.proyecto.guatevivo.paginas.profile.ui.user.userAccountScreen
 @Serializable
 data object ProfileNestNav
 
+@Serializable
+private data object ProfileStartDestination
+
 fun NavController.navigateToProfileNest(navOptions: NavOptions? = null) {
     navigate(ProfileNestNav, navOptions)
 }
 
 fun NavGraphBuilder.profileNestNav(
     navController: NavController,
-    isAccountBusiness: Boolean,
     bottomBarOptions: NavOptions
     ) {
     navigation<ProfileNestNav>(
-        startDestination = if (isAccountBusiness) {
-            BusinessAccountDestination
-        } else {
-            UserAccountDestination
-        }
+        startDestination = ProfileStartDestination
     ){
+        composable<ProfileStartDestination> {
+            val app = LocalContext.current.applicationContext as GuateVivoApp
+            var error by remember { mutableStateOf<String?>(null) }
+            var attempt by remember { mutableIntStateOf(0) }
+            LaunchedEffect(attempt) {
+                error = null
+                try {
+                    val uid = checkNotNull(app.authRepository.getCurrentUserId()) { "No hay sesión autenticada" }
+                    val profile = checkNotNull(app.userRepository.getUser(uid)) {
+                        "La cuenta no tiene perfil en Firestore. Completa el registro pendiente."
+                    }
+                    check(profile.accountType in AccountType.entries.map { it.name }) { "Tipo de cuenta inválido" }
+                    val options = navOptions {
+                        popUpTo<ProfileStartDestination> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    if (profile.accountType == AccountType.BUSINESS.name) {
+                        navController.navigate(BusinessAccountDestination, options)
+                    } else {
+                        navController.navigate(UserAccountDestination, options)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    error = e.localizedMessage ?: "No se pudo leer el tipo de cuenta"
+                }
+            }
+            Column {
+                if (error == null) CircularProgressIndicator()
+                else {
+                    Text(checkNotNull(error))
+                    TextButton(onClick = { attempt++ }) { Text("Reintentar cargar perfil") }
+                }
+            }
+        }
         businessAccountScreen(
+            onAmistades = { navController.navigateToFriends() },
             onHomeClick = {
                 navController.navigateToHome(bottomBarOptions)
             },
@@ -54,8 +99,8 @@ fun NavGraphBuilder.profileNestNav(
             onAjustes = {
                 navController.navigateToSettings()
             },
-            onEvent = {
-                navController.navigateToEventInfo()
+            onEvent = { eventId ->
+                navController.navigateToEventInfo(eventId)
             }
         )
         userAccountScreen(
@@ -75,11 +120,12 @@ fun NavGraphBuilder.profileNestNav(
             onAmistades = {
                 navController.navigateToFriends()
             },
-            onEvent = {
-                navController.navigateToEventInfo()
+            onEvent = { eventId ->
+                navController.navigateToEventInfo(eventId)
             }
         )
         friendsScreen(
+            onOpenProfile = { navController.navigateToPublicProfile(it) },
             onBackClick = {navController.navigateUp()},
             onHomeClick = {
                 navController.navigateToHome(bottomBarOptions)

@@ -3,6 +3,7 @@ package plat.proyecto.guatevivo.paginas.profile.ui.settings
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -115,9 +116,10 @@ private fun SettingsPage(
     onAboutClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onDeleteAccountClick: () -> Unit = {},
-    darkModeEnabled: Boolean = false,
-    onDarkModeChanged: (Boolean) -> Unit = {},
+    darkModeEnabled: Boolean? = null,
+    onDarkModeChanged: (Boolean?) -> Unit = {},
 ) {
+    val effectiveDarkMode = darkModeEnabled ?: isSystemInDarkTheme()
     Scaffold(
         topBar = {
             TopBar(true, onBackClick = onBackClick)
@@ -159,10 +161,19 @@ private fun SettingsPage(
             SettingsCategorySection(title = "APARIENCIA") {
                 SettingsToggleRowItem(
                     iconRes = R.drawable.settings,
+                    title = "Seguir configuración del sistema",
+                    subtitle = "Actualizar el tema automáticamente con el dispositivo",
+                    checked = darkModeEnabled == null,
+                    onCheckedChange = { followSystem ->
+                        onDarkModeChanged(if (followSystem) null else effectiveDarkMode)
+                    },
+                )
+                SettingsToggleRowItem(
+                    iconRes = R.drawable.settings,
                     title = "Modo oscuro",
                     subtitle = "Cambiar entre tema claro y oscuro",
-                    checked = darkModeEnabled,
-                    onCheckedChange = onDarkModeChanged,
+                    checked = effectiveDarkMode,
+                    onCheckedChange = { onDarkModeChanged(it) },
                 )
             }
 

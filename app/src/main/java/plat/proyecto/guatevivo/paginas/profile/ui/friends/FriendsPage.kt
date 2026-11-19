@@ -2,80 +2,72 @@ package plat.proyecto.guatevivo.paginas.profile.ui.friends
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import coil3.compose.AsyncImage
 import kotlinx.serialization.Serializable
 import plat.proyecto.guatevivo.core.bars.BottomNavigationBar
 import plat.proyecto.guatevivo.core.bars.TopBar
-import plat.proyecto.guatevivo.paginas.home.ui.home.SearchBarSection
+import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.PublicProfileDto
+import plat.proyecto.guatevivo.core.firebase.funciones.amigos.model.EmailFriendRequestOutcome
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
-@Serializable
-data object FriendsDestination
+@Serializable data object FriendsDestination
+@Serializable data class PublicProfileDestination(val uid: String)
 
-fun NavController.navigateToFriends(navOptions: NavOptions? = null) {
-    navigate(FriendsDestination, navOptions)
-}
+fun NavController.navigateToFriends(navOptions: NavOptions? = null) { navigate(FriendsDestination, navOptions) }
+fun NavController.navigateToPublicProfile(uid: String) { navigate(PublicProfileDestination(uid)) { launchSingleTop = true } }
 
 fun NavGraphBuilder.friendsScreen(
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onOpenProfile: (String) -> Unit
 ) {
     composable<FriendsDestination> {
-        FriendsRoute(
-            onBackClick = onBackClick,
-            onHomeClick = onHomeClick,
-            onSearchClick = onSearchClick,
-            onCreateClick = onCreateClick,
-            onProfileClick = onProfileClick
-        )
+        FriendsRoute(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick, onOpenProfile)
+    }
+    composable<PublicProfileDestination> { entry ->
+        val uid = entry.toRoute<PublicProfileDestination>().uid
+        val viewModel: FriendsViewModel = viewModel(factory = FriendsViewModel.factory(uid))
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
+        FriendsScaffold(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                Text("Perfil", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                if (state.isLoading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                state.error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                    TextButton(onClick = viewModel::refresh) { Text("Reintentar") }
+                }
+                state.openedProfile?.let { profile -> FriendItem(profile, onOpenProfile = {}) {} }
+            }
+        }
     }
 }
 
@@ -85,471 +77,187 @@ fun FriendsRoute(
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onOpenProfile: (String) -> Unit,
+    viewModel: FriendsViewModel = viewModel(factory = FriendsViewModel.factory())
 ) {
-    FriendsScreen(
-        onBackClick = onBackClick,
-        onHomeClick = onHomeClick,
-        onSearchClick = onSearchClick,
-        onCreateClick = onCreateClick,
-        onProfileClick = onProfileClick
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
+    FriendsScreen(state, viewModel::onEvent, onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick, onOpenProfile)
+}
+
+@Composable
+private fun FriendsScaffold(
+    onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCreateClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    content: @Composable (PaddingValues) -> Unit
+) {
+    Scaffold(
+        topBar = { TopBar(true, onBackClick = onBackClick) },
+        bottomBar = {
+            BottomNavigationBar(selectedItem = -1, onItemClick = {
+                when (it) { 0 -> onHomeClick(); 1 -> onSearchClick(); 2 -> onCreateClick(); 3 -> onProfileClick() }
+            })
+        },
+        containerColor = MaterialTheme.colorScheme.surface, content = content
     )
 }
 
-data class Friend(
-    val id: String,
-    val name: String,
-    val email: String,
-    val imageResId: Int? = null
-)
-
 @Composable
 private fun FriendsScreen(
+    state: FriendsState = FriendsState(),
+    onEvent: (FriendsEvent) -> Unit = {},
+    onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    friends: List<Friend> = emptyList(),
-    modifier: Modifier = Modifier,
-    friendRequests: List<Friend> = emptyList(),
-    initialTab: Int = 0,
-    onBackClick: () -> Unit = {},
-    onSendFriendRequest: (String) -> Unit = {},
-    onDeleteFriend: (Friend) -> Unit = {},
-    onAcceptRequest: (Friend) -> Unit = {},
-    onDeclineRequest: (Friend) -> Unit = {}
+    onOpenProfile: (String) -> Unit = {}
 ) {
-    val emailState = rememberTextFieldState()
-    var selectedTab by remember { mutableIntStateOf(initialTab) }
-
-    Scaffold(
-        topBar = {
-            TopBar(true, onBackClick = onBackClick)
+    val enabled = !state.isLoading && !state.isSending && state.processingUid == null && state.uid.isNotBlank()
+    if (state.removeUid != null) AlertDialog(
+        onDismissRequest = { onEvent(FriendsEvent.CancelRemove) },
+        title = { Text("Eliminar amigo") },
+        text = {
+            Column {
+                Text("¿Eliminar esta amistad? Podrán volver a enviarse una solicitud.")
+                if (state.processingUid != null) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
         },
-        bottomBar = {
-            BottomNavigationBar(
-                selectedItem = -1,
-                onItemClick = { index ->
-                    when (index) {
-                        0 -> onHomeClick()
-                        1 -> onSearchClick()
-                        2 -> onCreateClick()
-                        3 -> onProfileClick()
-                    }
+        confirmButton = { TextButton(enabled = enabled, onClick = { onEvent(FriendsEvent.ConfirmRemove) }) { Text("Eliminar") } },
+        dismissButton = { TextButton(enabled = enabled, onClick = { onEvent(FriendsEvent.CancelRemove) }) { Text("Cancelar") } }
+    )
+    FriendsScaffold(onBackClick, onHomeClick, onSearchClick, onCreateClick, onProfileClick) { padding ->
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                Text("Amigos", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                HorizontalDivider(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), thickness = 3.dp, color = MaterialTheme.colorScheme.primary)
+                if (state.isLoading || state.isSending || state.processingUid != null) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                state.error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
+                    TextButton(onClick = { onEvent(FriendsEvent.ClearError) }) { Text("Cerrar") }
                 }
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { padding ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(padding),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(
-                text = "Amigos",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(16.dp)
-            )
-
-            HorizontalDivider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                thickness = 3.dp,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Agregar amigos",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SearchBarSection("Buscar amigos por correo electrónico")
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    val email = emailState.text.toString().trim()
-                    if (email.isNotEmpty()) {
-                        onSendFriendRequest(email)
-                        emailState.clearText()
-                    }
-                },
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                    .fillMaxWidth()
-                    .height(55.dp),
-                shape = RoundedCornerShape(4.dp)
-            ) {
-                Text(
-                    text = "Enviar solicitud",
-                    style = MaterialTheme.typography.bodyLarge
+                TextButton(enabled = !state.isLoading && !state.isSending && state.processingUid == null, onClick = { onEvent(FriendsEvent.Refresh) }) { Text("Actualizar") }
+                Text("Agregar amigos", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp))
+                OutlinedTextField(
+                    value = state.email,
+                    onValueChange = { onEvent(FriendsEvent.UpdateEmail(it)) },
+                    label = { Text("Correo electrónico") },
+                    supportingText = { Text("Correo principal de una cuenta registrada") },
+                    singleLine = true,
+                    enabled = !state.isSending,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-            }
-
-            PrimaryTabRow(
-                selectedTabIndex = selectedTab,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = {
-                        Text(
-                            text = "Mis amigos (${friends.size})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        Text(
-                            text = "Solicitudes (${friendRequests.size})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (selectedTab == 0) {
-                if (friends.isEmpty()) {
-                    Text(
-                        text = "Todavía no tienes amigos agregados.",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(items = friends, key = { friend -> friend.id }) { friend ->
-                            FriendItem(
-                                friend = friend,
-                                onDeleteFriend = { onDeleteFriend(friend) }
-                            )
-                        }
-                    }
-                }
-            } else {
-                if (friendRequests.isEmpty()) {
-                    Text(
-                        text = "No tienes solicitudes de amistad pendientes.",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(items = friendRequests, key = { req -> req.id }) { request ->
-                            FriendRequestItem(
-                                friend = request,
-                                onAccept = { onAcceptRequest(request) },
-                                onDecline = { onDeclineRequest(request) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FriendItem(
-    friend: Friend,
-    onDeleteFriend: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var menu by remember { mutableStateOf(false) }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp)
-    ) {
-        Surface(
-            onClick = { menu = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(4.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-            tonalElevation = 2.dp,
-            shadowElevation = 4.dp,
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (friend.imageResId == null) {
-                    Surface(
-                        modifier = Modifier.size(48.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = friend.name.firstOrNull()?.uppercase() ?: "",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                } else {
-                    Icon(
-                        painter = painterResource(id = friend.imageResId),
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = friend.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = friend.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        DropdownMenu(
-            expanded = menu,
-            onDismissRequest = { menu = false }
-        ) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = "Eliminar amigo",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                },
-                onClick = {
-                    menu = false
-                    onDeleteFriend()
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun FriendRequestItem(
-    friend: Friend,
-    onAccept: () -> Unit,
-    onDecline: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp),
-        shape = RoundedCornerShape(4.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        tonalElevation = 2.dp,
-        shadowElevation = 4.dp,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (friend.imageResId == null) {
-                    Surface(
-                        modifier = Modifier.size(48.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = friend.name.firstOrNull()?.uppercase() ?: "",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                } else {
-                    Icon(
-                        painter = painterResource(id = friend.imageResId),
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = friend.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = friend.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
                 Button(
-                    onClick = onAccept,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(text = "Aceptar")
-                }
-
-                OutlinedButton(
-                    onClick = onDecline,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(4.dp)
-                ) {
+                    enabled = !state.isLoading && !state.isSending && state.processingUid == null && state.email.isNotBlank(),
+                    onClick = { onEvent(FriendsEvent.SendRequest) },
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(55.dp)
+                ) { Text(if (state.isSending) "Enviando…" else "Enviar solicitud") }
+                state.sendError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+                state.sendOutcome?.let { outcome ->
                     Text(
-                        text = "Rechazar",
-                        color = MaterialTheme.colorScheme.error
+                        when (outcome) {
+                            EmailFriendRequestOutcome.SENT -> "Solicitud enviada"
+                            EmailFriendRequestOutcome.PENDING -> "Ya existe una solicitud pendiente entre estas cuentas"
+                            EmailFriendRequestOutcome.FRIENDS -> "Esta cuenta ya está en tus amigos"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
+            item {
+                PrimaryTabRow(selectedTabIndex = state.selectedTab, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    listOf("Mis amigos (${state.friends.size})", "Solicitudes (${state.requests.size})").forEachIndexed { index, title ->
+                        Tab(selected = state.selectedTab == index, onClick = { onEvent(FriendsEvent.SelectTab(index)) }, text = { Text(title) })
+                    }
+                }
+            }
+            val entries = if (state.selectedTab == 0) state.friends else state.requests
+            if (entries.isEmpty() && !state.isLoading && state.error == null) item {
+                EmptyFriendsText(if (state.selectedTab == 0) "Todavía no tienes amigos agregados." else "No tienes solicitudes pendientes.")
+            }
+            items(entries, key = { "relation-${it.id}" }) { request ->
+                val uid = state.otherUid(request)
+                state.profiles[uid]?.let { profile ->
+                    FriendRequestItem(profile, { onOpenProfile(uid) }) { FriendActions(uid, state, enabled, onEvent, onOpenProfile) }
+                }
+            }
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
-@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+
 @Composable
-fun FriendsScreenPreview() {
-    GuatevivoTheme {
-        val testFriends = listOf(
-            Friend(
-                id = "1",
-                name = "Alejandro",
-                email = "Alejandro@gmail.com"
-            ),
-            Friend(
-                id = "2",
-                name = "Jimena",
-                email = "maria@gmail.com"
-            )
-        )
-
-        val testRequests = listOf(
-            Friend(
-                id = "3",
-                name = "Carlos Gomez",
-                email = "carlos@gmail.com"
-            )
-        )
-
-        FriendsScreen(
-            friends = testFriends,
-            friendRequests = testRequests
-        )
+private fun RowScope.FriendActions(uid: String, state: FriendsState, enabled: Boolean, onEvent: (FriendsEvent) -> Unit, onOpenProfile: (String) -> Unit) {
+    val request = state.relationship(uid)
+    when {
+        request == null -> Text("Sin solicitud activa", style = MaterialTheme.typography.bodySmall)
+        request.status == "ACCEPTED" -> {
+            var menu by remember { mutableStateOf(false) }
+            Box {
+                OutlinedButton(enabled = enabled, onClick = { menu = true }, shape = RoundedCornerShape(4.dp)) { Text("Amigos") }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text("Ver perfil") }, onClick = { menu = false; onOpenProfile(uid) })
+                    DropdownMenuItem(text = { Text("Eliminar amigo", color = MaterialTheme.colorScheme.error) }, onClick = { menu = false; onEvent(FriendsEvent.Remove(uid)) })
+                }
+            }
+        }
+        request.senderUid == state.uid -> {
+            Text("Solicitud enviada", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            TextButton(enabled = enabled, onClick = { onEvent(FriendsEvent.Cancel(request.id)) }) { Text("Cancelar") }
+        }
+        else -> {
+            Button(enabled = enabled, onClick = { onEvent(FriendsEvent.Accept(request.id)) }, shape = RoundedCornerShape(4.dp)) { Text("Aceptar") }
+            OutlinedButton(enabled = enabled, onClick = { onEvent(FriendsEvent.Reject(request.id)) }, shape = RoundedCornerShape(4.dp)) { Text("Rechazar") }
+        }
     }
+}
+
+@Composable
+fun FriendItem(profile: PublicProfileDto, onOpenProfile: () -> Unit, actions: @Composable RowScope.() -> Unit) {
+    Surface(onClick = onOpenProfile, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest, tonalElevation = 2.dp, shadowElevation = 4.dp) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FriendAvatar(profile)
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(profile.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                    Text(if (profile.accountType == "BUSINESS") "Empresa" else "Cuenta personal", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically, content = actions)
+        }
+    }
+}
+
+@Composable
+fun FriendRequestItem(profile: PublicProfileDto, onOpenProfile: () -> Unit, actions: @Composable RowScope.() -> Unit) = FriendItem(profile, onOpenProfile, actions)
+
+@Composable
+private fun FriendAvatar(profile: PublicProfileDto) {
+    Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+        if (profile.photoUrl.startsWith("https://")) AsyncImage(
+            model = profile.photoUrl, contentDescription = "Foto de ${profile.name}",
+            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape)
+        ) else Box(contentAlignment = Alignment.Center) {
+            Text(profile.name.firstOrNull()?.uppercase().orEmpty(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        }
+    }
+}
+
+@Composable private fun EmptyFriendsText(text: String) {
+    Text(text, modifier = Modifier.fillMaxWidth().padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO)
 @Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-fun FriendsScreenSolicitudesPreview() {
-    GuatevivoTheme {
-        val testFriends = listOf(
-            Friend(
-                id = "1",
-                name = "Alejandro",
-                email = "Alejandro@gmail.com"
-            )
-        )
-
-        val testRequests = listOf(
-            Friend(
-                id = "3",
-                name = "Carlos Gomez",
-                email = "carlos@gmail.com"
-            ),
-            Friend(
-                id = "4",
-                name = "Sofia Martinez",
-                email = "sofia@gmail.com"
-            )
-        )
-
-        FriendsScreen(
-            friends = testFriends,
-            friendRequests = testRequests,
-            initialTab = 1
-        )
-    }
-}
+@Composable fun FriendsScreenPreview() { GuatevivoTheme { FriendsScreen() } }

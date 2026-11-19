@@ -66,7 +66,7 @@ fun NavGraphBuilder.userAccountScreen(
     onProfileClick: () -> Unit,
     onAjustes: () -> Unit,
     onAmistades: () -> Unit,
-    onEvent: () -> Unit
+    onEvent: (String) -> Unit
 ) {
     composable<UserAccountDestination> {
         UserAccountRoute(
@@ -89,18 +89,25 @@ fun UserAccountRoute(
     onProfileClick: () -> Unit,
     onAjustes: () -> Unit,
     onAmistades: () -> Unit,
-    onEvent: () -> Unit,
+    onEvent: (String) -> Unit,
     viewModel: AccountViewModel = viewModel(factory = AccountViewModel.Factory)
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.loadData()
+    }
+
     AccountPage(
         usuario = state.usuario,
         correo = state.correo,
-        imagenPerfil = null,
-        listaAsistidos = emptyList(),
-        listaCreados = emptyList(),
-        listaCompartidos = emptyList(),
+        imagenPerfil = state.imagenPerfil,
+        listaAsistidos = state.listaAsistidos,
+        listaCreados = state.listaCreados,
+        listaCompartidos = state.listaCompartidos,
+        isLoading = state.isLoading,
+        error = state.error,
+        onClearError = { viewModel.onEvent(AccountEvent.ClearError) },
         onHomeClick = onHomeClick,
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
@@ -118,7 +125,7 @@ private fun AccountPage(
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onEvent: () -> Unit = {},
+    onEvent: (String) -> Unit = {},
     usuario: String = "",
     correo: String = "",
     imagenPerfil: Int? = null,
@@ -127,7 +134,10 @@ private fun AccountPage(
     onAmistades: () -> Unit = {},
     listaAsistidos: List<ProximamenteItem> = listOf(),
     listaCreados: List<ProximamenteItem> = listOf(),
-    listaCompartidos: List<ProximamenteItem> = listOf()
+    listaCompartidos: List<ProximamenteItem> = listOf(),
+    isLoading: Boolean = false,
+    error: String? = null,
+    onClearError: () -> Unit = {}
 ) {
     var seleccionado by remember { mutableIntStateOf(0) }
 
@@ -158,6 +168,41 @@ private fun AccountPage(
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(28.dp)
                 )
+            }
+        }
+
+        if (isLoading) {
+            androidx.compose.material3.LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        error?.let { errorMessage ->
+            androidx.compose.material3.Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    androidx.compose.material3.TextButton(onClick = onClearError) {
+                        Text("Cerrar", color = MaterialTheme.colorScheme.onErrorContainer)
+                    }
+                }
             }
         }
 
@@ -321,7 +366,8 @@ private fun AccountPage(
                         ubicacion = item.ubicacion,
                         cantidadAmigos = 0,
                         imageResId = item.imageResId,
-                        onEvent = onEvent
+                        imageUrl = item.imageUrl,
+                        onEvent = { onEvent(item.eventId) }
                     )
                 }
             }

@@ -1,6 +1,8 @@
 package plat.proyecto.guatevivo.core.datastore
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -8,9 +10,12 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import plat.proyecto.guatevivo.testing.InMemoryPreferencesDataStore
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PreferencesRepositoryTest {
@@ -49,7 +54,7 @@ class PreferencesRepositoryTest {
     }
 
     @Test
-    fun darkMode_defaultIsFalse() = testScope.runTest {
+    fun darkMode_defaultsToSystem() = testScope.runTest {
         val testFile = tmpFolder.root.resolve("test_preferences_dark.preferences_pb")
         val testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
@@ -58,7 +63,7 @@ class PreferencesRepositoryTest {
         val repository = PreferencesRepository(testDataStore)
 
         val darkMode = repository.darkModeFlow.first()
-        assertFalse(darkMode)
+        assertNull(darkMode)
     }
 
     @Test
@@ -72,6 +77,34 @@ class PreferencesRepositoryTest {
 
         repository.setDarkMode(enabled = true)
         val darkMode = repository.darkModeFlow.first()
-        assertTrue(darkMode)
+        assertEquals(true, darkMode)
+    }
+
+    @Test
+    fun darkMode_preservesExistingManualModesAndCanReturnToSystem() = testScope.runTest {
+        val testDataStore = InMemoryPreferencesDataStore()
+        val repository = PreferencesRepository(testDataStore)
+        repository.setOnboardingCompleted(true)
+
+        for (manualMode in listOf(false, true)) {
+            repository.setDarkMode(manualMode)
+            // Recreating the repository must retain the stored manual choice.
+            assertEquals(manualMode, PreferencesRepository(testDataStore).darkModeFlow.first())
+            repository.setDarkMode(null)
+            assertNull(PreferencesRepository(testDataStore).darkModeFlow.first())
+            assertTrue(repository.onboardingCompletedFlow.first())
+        }
+    }
+
+    @Test
+    fun darkMode_readsLegacyLightPreferenceFromDisk() = testScope.runTest {
+        val testFile = tmpFolder.root.resolve("legacy_light.preferences_pb")
+        val testDataStore = PreferenceDataStoreFactory.create(
+            scope = testScope,
+            produceFile = { testFile },
+        )
+        testDataStore.edit { it[booleanPreferencesKey("dark_mode")] = false }
+
+        assertEquals(false, PreferencesRepository(testDataStore).darkModeFlow.first())
     }
 }

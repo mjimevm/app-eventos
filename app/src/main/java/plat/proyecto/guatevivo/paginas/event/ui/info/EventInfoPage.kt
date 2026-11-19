@@ -2,8 +2,9 @@ package plat.proyecto.guatevivo.paginas.event.ui.info
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.content.Intent
+import android.content.ActivityNotFoundException
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,7 +14,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,10 +44,14 @@ import plat.proyecto.guatevivo.core.bars.TopBar
 import plat.proyecto.guatevivo.ui.theme.GuatevivoTheme
 
 @Serializable
-data class EventInfoDestination(val eventId: Int = 0)
+data class EventInfoDestination(val eventId: String = "", val mockEventId: Int? = null)
 
-fun NavController.navigateToEventInfo(eventId: Int = 0, navOptions: NavOptions? = null) {
-    navigate(EventInfoDestination(eventId), navOptions)
+fun NavController.navigateToEventInfo(eventId: String, navOptions: NavOptions? = null) {
+    navigate(EventInfoDestination(eventId = eventId), navOptions)
+}
+
+fun NavController.navigateToEventInfo(eventId: Int, navOptions: NavOptions? = null) {
+    navigate(EventInfoDestination(mockEventId = eventId), navOptions)
 }
 
 fun NavGraphBuilder.eventInfoScreen(
@@ -49,7 +59,8 @@ fun NavGraphBuilder.eventInfoScreen(
     onSearchClick: () -> Unit,
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onBackArrow: () -> Unit
+    onBackArrow: () -> Unit,
+    onEdit: (String) -> Unit = {}
 ) {
     composable<EventInfoDestination> {
         EventInfoRoute(
@@ -57,7 +68,8 @@ fun NavGraphBuilder.eventInfoScreen(
             onSearchClick = onSearchClick,
             onCreateClick = onCreateClick,
             onProfileClick = onProfileClick,
-            onBackArrow = onBackArrow
+            onBackArrow = onBackArrow,
+            onEdit = onEdit
         )
     }
 }
@@ -69,9 +81,34 @@ fun EventInfoRoute(
     onCreateClick: () -> Unit,
     onProfileClick: () -> Unit,
     onBackArrow: () -> Unit,
-    viewModel: EventInfoViewModel = viewModel()
+    viewModel: EventInfoViewModel = viewModel(factory = EventInfoViewModel.Factory),
+    onEdit: (String) -> Unit = {}
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
+    LaunchedEffect(state.isDeleted) {
+        if (state.isDeleted) {
+            viewModel.onEvent(EventInfoEvent.DeletionHandled)
+            onBackArrow()
+        }
+    }
+    LaunchedEffect(state.shareText) {
+        val text = state.shareText ?: return@LaunchedEffect
+        viewModel.onEvent(EventInfoEvent.ShareHandled)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, text.lineSequence().first())
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        try {
+            context.startActivity(Intent.createChooser(intent, "Enviar evento a amigos"))
+        } catch (_: ActivityNotFoundException) {
+            viewModel.onEvent(EventInfoEvent.ShareFailed)
+        } catch (_: SecurityException) {
+            viewModel.onEvent(EventInfoEvent.ShareFailed)
+        }
+    }
 
     EventoInfoPage(
         state = state,
@@ -80,7 +117,8 @@ fun EventInfoRoute(
         onSearchClick = onSearchClick,
         onCreateClick = onCreateClick,
         onProfileClick = onProfileClick,
-        onBackArrow = onBackArrow
+        onBackArrow = onBackArrow,
+        onEdit = { onEdit(state.eventId) }
     )
 }
 
@@ -93,9 +131,32 @@ private fun EventoInfoPage(
     onSearchClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onBackArrow: () -> Unit = {}
+    onBackArrow: () -> Unit = {},
+    onEdit: () -> Unit = {}
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val actionsEnabled = !state.isLoading && !state.isDeleting && !state.isSharing
+    if (state.showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { onEvent(EventInfoEvent.CancelDelete) },
+            title = { Text("Eliminar evento") },
+            text = {
+                Column {
+                    Text("¿Eliminar este evento permanentemente? Esta acción no se puede deshacer.")
+                    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    if (state.isDeleting) LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = actionsEnabled, onClick = { onEvent(EventInfoEvent.ConfirmDelete) }) {
+                    Text(if (state.isDeleting) "Eliminando…" else "Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !state.isDeleting, onClick = { onEvent(EventInfoEvent.CancelDelete) }) { Text("Cancelar") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -124,18 +185,33 @@ private fun EventoInfoPage(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            if (!actionsEnabled) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            state.error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                TextButton(enabled = actionsEnabled, onClick = { onEvent(EventInfoEvent.Refresh) }) { Text("Volver a cargar") }
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.End) {
+                if (state.canShare) TextButton(enabled = actionsEnabled, onClick = { onEvent(EventInfoEvent.Share) }) { Text("Compartir") }
+                if (state.canManage) {
+                    TextButton(enabled = actionsEnabled, onClick = onEdit) { Text("Editar") }
+                    TextButton(enabled = actionsEnabled, onClick = { onEvent(EventInfoEvent.RequestDelete) }) {
+                        Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                Box(
+                if (state.imageUrl.isNotBlank() || state.imageResId != 0) Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(450.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = state.imageResId),
+                    AsyncImage(
+                        model = state.imageUrl.ifBlank { null },
+                        fallback = state.imageResId.takeIf { it != 0 }?.let { painterResource(id = it) },
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -230,7 +306,7 @@ private fun EventoInfoPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Surface(
+                    if (state.precio.isNotBlank()) Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(4.dp),
@@ -247,7 +323,7 @@ private fun EventoInfoPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Surface(
+                    if (state.amigosAsistiran.isNotEmpty()) Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(4.dp),
@@ -288,7 +364,7 @@ private fun EventoInfoPage(
                 }
             }
 
-            Button(
+            if (state.canAttend) Button(
                 onClick = { onEvent(EventInfoEvent.ToggleAttend) },
                 enabled = !state.isLoading,
                 modifier = Modifier

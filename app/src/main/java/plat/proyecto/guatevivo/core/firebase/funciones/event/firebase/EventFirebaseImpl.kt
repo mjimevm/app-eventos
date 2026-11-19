@@ -2,6 +2,8 @@ package plat.proyecto.guatevivo.core.firebase.funciones.event.firebase
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 import plat.proyecto.guatevivo.core.firebase.FirebaseCollections
 import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventDto
@@ -9,6 +11,8 @@ import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventStatus
 import plat.proyecto.guatevivo.core.firebase.funciones.event.model.EventVisibility
 import plat.proyecto.guatevivo.core.firebase.funciones.user.model.AccountType
 import plat.proyecto.guatevivo.core.firebase.funciones.user.model.UserDto
+import plat.proyecto.guatevivo.core.repository.EventReadException
+import plat.proyecto.guatevivo.core.repository.EventReadFailure
 
 class EventFirebaseImpl(
     private val firestore: FirebaseFirestore,
@@ -20,6 +24,19 @@ class EventFirebaseImpl(
 
     private val users
         get() = firestore.collection(FirebaseCollections.USERS)
+
+    private suspend fun <T> readFromServer(block: suspend () -> T): T = try {
+        block()
+    } catch (e: FirebaseFirestoreException) {
+        val reason = when (e.code) {
+            FirebaseFirestoreException.Code.UNAVAILABLE,
+            FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> EventReadFailure.CONNECTION
+            FirebaseFirestoreException.Code.PERMISSION_DENIED -> EventReadFailure.PERMISSION_DENIED
+            FirebaseFirestoreException.Code.UNAUTHENTICATED -> EventReadFailure.UNAUTHENTICATED
+            else -> throw e
+        }
+        throw EventReadException(reason, e)
+    }
 
     private fun currentUid(): String {
         return auth.currentUser?.uid?: throw IllegalStateException("Usuario no autenticado")
@@ -93,13 +110,15 @@ class EventFirebaseImpl(
             ).await()
     }
 
-    override suspend fun getPublicEvents(): List<EventDto> {
-        return events
+    override suspend fun getPublicEvents(): List<EventDto> = readFromServer {
+        events
             .whereEqualTo("status", EventStatus.PUBLISHED.name)
             .whereEqualTo("visibility", EventVisibility.PUBLIC.name)
-            .get()
+            .get(Source.SERVER)
             .await()
-            .toObjects(EventDto::class.java)
+            .documents.mapNotNull { document ->
+                document.toObject(EventDto::class.java)?.copy(id = document.id)
+            }
     }
 
     override suspend fun getMyDrafts(): List<EventDto> {
@@ -115,11 +134,9 @@ class EventFirebaseImpl(
         return getEventsByOrganizer(currentUid())
     }
 
-    override suspend fun getEventById(eventId: String): EventDto? {
-        return events.document(eventId)
-            .get()
-            .await()
-            .toObject(EventDto::class.java)
+    override suspend fun getEventById(eventId: String): EventDto? = readFromServer {
+        val document = events.document(eventId).get(Source.SERVER).await()
+        document.toObject(EventDto::class.java)?.copy(id = document.id)
     }
 
     override suspend fun getEventsByOrganizer(
